@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务备忘录 - Todo API</title>
+  <style>
+    /* ==================== 全局样式 ==================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 28px;
+      color: #1f6feb;
+    }
+
+    header p {
+      margin-top: 6px;
+      color: #888;
+      font-size: 14px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* ==================== 新增任务表单 ==================== */
+    .form-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: #1f6feb;
+    }
+
+    #title {
+      flex: 2;
+      min-width: 220px;
+    }
+
+    #priority {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    textarea {
+      margin-top: 10px;
+      resize: vertical;
+      min-height: 56px;
+    }
+
+    .btn-primary {
+      margin-top: 10px;
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 6px;
+      background: #1f6feb;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: #175fd0;
+    }
+
+    /* ==================== 任务列表 ==================== */
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .list-header h2 {
+      font-size: 18px;
+    }
+
+    .stats {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .btn-refresh {
+      padding: 6px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      background: #fff;
+      color: #555;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-refresh:hover {
+      background: #f5f5f5;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 4px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .task-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-size: 15px;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .task-description {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #777;
+      word-break: break-word;
+    }
+
+    .task-meta {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #aaa;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* 任务完成后的样式：文字划线变灰 */
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: #aaa;
+    }
+
+    .task-item.completed .task-description {
+      color: #ccc;
+    }
+
+    /* 优先级徽章 */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #fff;
+    }
+
+    .badge.low {
+      background: #52c41a;
+    }
+
+    .badge.medium {
+      background: #fa8c16;
+    }
+
+    .badge.high {
+      background: #f5222d;
+    }
+
+    .btn-delete {
+      padding: 5px 12px;
+      border: 1px solid #ffccc7;
+      border-radius: 6px;
+      background: #fff1f0;
+      color: #cf1322;
+      font-size: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .btn-delete:hover {
+      background: #ffccc7;
+    }
+
+    .empty {
+      text-align: center;
+      color: #aaa;
+      padding: 30px 0;
+      font-size: 14px;
+    }
+
+    /* ==================== 提示消息 ==================== */
+    .message {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      max-width: 90%;
+    }
+
+    .message.success {
+      background: #52c41a;
+    }
+
+    .message.error {
+      background: #f5222d;
+    }
+
+    .message.info {
+      background: #1f6feb;
+    }
+
+    footer {
+      text-align: center;
+      color: #bbb;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📝 任务备忘录</h1>
+      <p>纯原生 HTML + JavaScript 前端，数据来自 FastAPI + MySQL 后端</p>
+    </header>
+
+    <!-- 新增任务表单 -->
+    <section class="card">
+      <form id="task-form">
+        <div class="form-row">
+          <input type="text" id="title" placeholder="任务标题（必填）" maxlength="100" required>
+          <select id="priority">
+            <option value="low">低优先级</option>
+            <option value="medium" selected>中优先级</option>
+            <option value="high">高优先级</option>
+          </select>
+        </div>
+        <textarea id="description" placeholder="任务描述（可选，最多 500 字）" maxlength="500"></textarea>
+        <button type="submit" class="btn-primary">＋ 添加任务</button>
+      </form>
+    </section>
+
+    <!-- 任务列表 -->
+    <section class="card">
+      <div class="list-header">
+        <h2>任务列表</h2>
+        <div>
+          <span class="stats" id="stats"></span>
+          <button class="btn-refresh" id="refresh-btn" type="button">刷新</button>
+        </div>
+      </div>
+      <div id="task-list"></div>
+      <div class="empty" id="empty-state">加载中...</div>
+    </section>
+
+    <footer>
+      请通过 <code>http://localhost:8000/static/index.html</code> 访问本页面（不要用 file:// 直接打开）
+    </footer>
+  </div>
+
+  <!-- 页面提示消息 -->
+  <div class="message" id="message" hidden></div>
+
+  <script>
+    // ====================================================================
+    // 前后端数据交互整体流程（先看这里，再看下面的代码）
+    // ====================================================================
+    // 1. 浏览器里的这个页面通过 fetch() 向 FastAPI 发 HTTP 请求
+    // 2. FastAPI 根据 URL 和方法（GET/POST/PUT/DELETE）匹配到对应的接口函数
+    // 3. 接口函数通过 SQLAlchemy 操作 MySQL 数据库（增删改查）
+    // 4. 数据库返回结果，接口函数把结果序列化成 JSON 字符串
+    // 5. 浏览器 fetch() 拿到响应，用 response.json() 解析成 JavaScript 对象
+    // 6. JavaScript 把数据渲染到页面（createElement 拼出列表项）
+    //
+    // 本页面用到的四个接口：
+    //   GET    /tasks        → 获取任务列表
+    //   POST   /tasks        → 新增任务
+    //   PUT    /tasks/{id}   → 更新任务（这里用来切换完成状态）
+    //   DELETE /tasks/{id}   → 删除任务
+    // ====================================================================
+
+    // 页面和接口在同一个域名（localhost:8000），所以直接用相对路径
+    const API_TASKS = "/tasks";
+
+    // 页面元素
+    const form = document.getElementById("task-form");
+    const titleInput = document.getElementById("title");
+    const descriptionInput = document.getElementById("description");
+    const prioritySelect = document.getElementById("priority");
+    const taskList = document.getElementById("task-list");
+    const emptyState = document.getElementById("empty-state");
+    const stats = document.getElementById("stats");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const messageBox = document.getElementById("message");
+
+    // 让提示消息 3 秒后自动消失
+    let messageTimer = null;
+    function showMessage(text, type = "info") {
+      messageBox.textContent = text;
+      messageBox.className = "message " + type;
+      messageBox.hidden = false;
+      clearTimeout(messageTimer);
+      messageTimer = setTimeout(() => {
+        messageBox.hidden = true;
+      }, 3000);
+    }
+
+    // 把用户输入的内容转成"纯文本"，防止别人输入 <script> 之类的代码被当作 HTML 执行（XSS 攻击）
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text == null ? "" : String(text);
+      return div.innerHTML;
+    }
+
+    // 把后端返回的时间字符串格式化成"2026-08-19 14:30"这种容易读的格式
+    function formatTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (isNaN(date.getTime())) return "";
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    // 把优先级英文值翻译成中文，并返回对应的徽章样式类名
+    function priorityInfo(priority) {
+      const map = {
+        low: ["低", "low"],
+        medium: ["中", "medium"],
+        high: ["高", "high"],
+      };
+      const item = map[priority] || ["中", "medium"];
+      return { label: item[0], className: item[1] };
+    }
+
+    // 更新"共 X 条 / 已完成 Y 条"的统计
+    function updateStats(tasks) {
+      const completed = tasks.filter((t) => t.is_completed).length;
+      stats.textContent = `共 ${tasks.length} 条 · 已完成 ${completed} 条`;
+    }
+
+    // ====================================================================
+    // 1. 获取任务列表（页面加载时自动调用）
+    // ====================================================================
+    async function fetchTasks() {
+      showMessage("正在加载任务列表...", "info");
+      try {
+        // ① 发起 GET 请求，向 FastAPI 的 /tasks 接口要数据。
+        // 后端流程：read_tasks() → SQLAlchemy 查 MySQL → 返回 JSON
+        const response = await fetch(API_TASKS, {
+          method: "GET",
+        });
+
+        // response.ok 为 true 表示 HTTP 状态码是 2xx（成功）
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`加载失败：HTTP ${response.status} ${errorText}`);
+        }
+
+        // ② 把响应体从 JSON 字符串解析成 JavaScript 对象。
+        // 后端返回的结构是：{ "total": 总数, "tasks": [ {任务对象}, ... ] }
+        const data = await response.json();
+
+        // ③ 用拿到的数据渲染列表
+        renderTasks(data.tasks || []);
+        updateStats(data.tasks || []);
+        showMessage(`共 ${data.total} 条任务`, "success");
+      } catch (error) {
+        // 网络不通 / 后端没启动 / 接口报错都会走到这里
+        showMessage(error.message, "error");
+        emptyState.textContent = "加载失败，请确认后端服务已启动（docker compose up）";
+      }
+    }
+
+    // ====================================================================
+    // 2. 新增任务（点击"添加任务"按钮时调用）
+    // ====================================================================
+    async function addTask(event) {
+      event.preventDefault(); // 阻止表单默认行为（默认会刷新整个页面）
+
+      const title = titleInput.value.trim();
+      const description = descriptionInput.value.trim();
+      const priority = prioritySelect.value;
+
+      if (!title) {
+        showMessage("任务标题不能为空", "error");
+        titleInput.focus();
+        return;
+      }
+
+      try {
+        // ① 构造请求体：字段名必须和后端 TaskCreate 模型完全一致。
+        // title 必填；description 可空；priority 只能是 low/medium/high
+        const body = JSON.stringify({
+          title: title,
+          description: description || null,
+          priority: priority,
+        });
+
+        // ② 发起 POST 请求。
+        // Content-Type: application/json 告诉后端"请求体是 JSON"；
+        // 后端用 TaskCreate 校验 body，通过后执行 create_task() 写入 MySQL，返回 201 + 新任务 JSON
+        const response = await fetch(API_TASKS, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: body,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`新增失败：HTTP ${response.status} ${errorText}`);
+        }
+
+        // ③ 新增成功后清空输入框，重新拉取一次列表（后端数据已经变了，页面要跟着变）
+        titleInput.value = "";
+        descriptionInput.value = "";
+        prioritySelect.value = "medium";
+        showMessage("任务添加成功", "success");
+        await fetchTasks();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    // ====================================================================
+    // 3. 切换任务完成状态（勾选/取消勾选复选框时调用）
+    // ====================================================================
+    async function toggleTask(task, checkbox) {
+      try {
+        // ① 只把"是否完成"这一个字段放进请求体。
+        // 后端的 TaskUpdate 模型所有字段都可选，传了哪个就更新哪个
+        const body = JSON.stringify({
+          is_completed: checkbox.checked,
+        });
+
+        // ② 发起 PUT 请求：/tasks/{id} 里的 {id} 告诉后端改哪一条任务。
+        // 后端流程：update_task() 按 id 找到任务 → 只更新 is_completed → 返回更新后的任务 JSON
+        const response = await fetch(`${API_TASKS}/${task.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: body,
+        });
+
+        if (!response.ok) {
+          // 失败时把复选框还原成之前的状态
+          checkbox.checked = !checkbox.checked;
+          const errorText = await response.text();
+          throw new Error(`更新失败：HTTP ${response.status} ${errorText}`);
+        }
+
+        // ③ 更新成功，重新拉取列表让页面和后端保持一致
+        showMessage(checkbox.checked ? "任务已完成 ✅" : "任务已恢复为未完成", "success");
+        await fetchTasks();
+      } catch (error) {
+        checkbox.checked = !checkbox.checked;
+        showMessage(error.message, "error");
+      }
+    }
+
+    // ====================================================================
+    // 4. 删除任务（点击"删除"按钮时调用）
+    // ====================================================================
+    async function deleteTask(id) {
+      // 删除后数据不可恢复，先弹窗让用户确认
+      if (!confirm("确定要删除这条任务吗？此操作不可恢复！")) {
+        return;
+      }
+
+      try {
+        // ① 发起 DELETE 请求：/tasks/{id} 里的 {id} 告诉后端删哪一条。
+        // 后端流程：delete_task() 按 id 找到任务 → 从数据库删除 → 返回 {"message": "任务 ID x 已删除"}
+        const response = await fetch(`${API_TASKS}/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`删除失败：HTTP ${response.status} ${errorText}`);
+        }
+
+        // ② 删除成功，重新拉取列表
+        showMessage("任务已删除", "success");
+        await fetchTasks();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    // ====================================================================
+    // 渲染任务列表：把后端返回的任务数组变成页面上的 DOM 元素
+    // ====================================================================
+    function renderTasks(tasks) {
+      // 先清空旧内容，再重新渲染
+      taskList.innerHTML = "";
+
+      if (!tasks || tasks.length === 0) {
+        emptyState.hidden = false;
+        emptyState.textContent = "暂无任务，先在上方添加一条吧 🎉";
+        stats.textContent = "共 0 条 · 已完成 0 条";
+        return;
+      }
+
+      emptyState.hidden = true;
+
+      // 用 createElement 一个一个拼出列表项（比拼字符串更安全、更好理解）
+      for (const task of tasks) {
+        const item = document.createElement("div");
+        item.className = "task-item" + (task.is_completed ? " completed" : "");
+
+        // 复选框：勾选 = 已完成
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = Boolean(task.is_completed);
+        checkbox.addEventListener("change", () => toggleTask(task, checkbox));
+
+        // 任务主体：标题 + 描述 + 元信息
+        const body = document.createElement("div");
+        body.className = "task-body";
+
+        const title = document.createElement("div");
+        title.className = "task-title";
+        title.textContent = task.title;
+
+        const description = document.createElement("div");
+        description.className = "task-description";
+        description.textContent = task.description || "";
+
+        const meta = document.createElement("div");
+        meta.className = "task-meta";
+
+        const badge = document.createElement("span");
+        const p = priorityInfo(task.priority);
+        badge.className = "badge " + p.className;
+        badge.textContent = "优先级：" + p.label;
+
+        const time = document.createElement("span");
+        time.textContent = "创建于 " + formatTime(task.created_at);
+
+        meta.appendChild(badge);
+        meta.appendChild(time);
+
+        body.appendChild(title);
+        body.appendChild(description);
+        body.appendChild(meta);
+
+        // 删除按钮
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-delete";
+        delBtn.textContent = "删除";
+        delBtn.addEventListener("click", () => deleteTask(task.id));
+
+        item.appendChild(checkbox);
+        item.appendChild(body);
+        item.appendChild(delBtn);
+        taskList.appendChild(item);
+      }
+    }
+
+    // ==================== 事件绑定与初始化 ====================
+
+    // 提交表单 → 新增任务
+    form.addEventListener("submit", addTask);
+
+    // 点"刷新"按钮 → 重新拉取列表
+    refreshBtn.addEventListener("click", fetchTasks);
+
+    // 页面加载完成后，自动拉取一次任务列表
+    document.addEventListener("DOMContentLoaded", fetchTasks);
+  </script>
+</body>
+</html>

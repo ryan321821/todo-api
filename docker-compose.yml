@@ -1,0 +1,38 @@
+services:
+  api:
+    build: .
+    container_name: todo-api
+    ports:
+      - "8000:8000"
+    volumes:
+    - ./app:/app/app
+    - ./static:/app/static
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: mysql+pymysql://todo:todo@db:3306/todo?charset=utf8mb4
+      SECRET_KEY: change-me-in-production
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    container_name: todo-db
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: todo
+      MYSQL_USER: todo
+      MYSQL_PASSWORD: todo
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:   # 在文件最底部声明顶层命名卷 mysql_data，由 Docker 引擎在底层统一管理其存储空间。
