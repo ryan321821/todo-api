@@ -1,38 +1,49 @@
-services:
+services:                          # 服务列表：每一个服务对应一个容器
+
+  # ---------------------------------------------------------------
+  # 服务一：api —— FastAPI 应用容器（处理 HTTP 请求）
+  # ---------------------------------------------------------------
   api:
-    build: .
-    container_name: todo-api
+    build: .                       # 用当前目录下的 Dockerfile 构建镜像
+    container_name: todo-api       # 给容器起固定名字，方便用 docker logs/exec 操作
     ports:
-      - "8000:8000"
+      - "8000:8000"                # 端口映射：宿主机 8000 → 容器 8000（浏览器访问 http://localhost:8000）
     volumes:
-    - ./app:/app/app
-    - ./static:/app/static
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    environment:
-      DATABASE_URL: mysql+pymysql://todo:todo@db:3306/todo?charset=utf8mb4
-      SECRET_KEY: change-me-in-production
-    depends_on:
+      # 卷挂载：把宿主机目录同步进容器，改代码不用重新构建镜像
+      - ./app:/app/app             # 后端代码：宿主机 ./app → 容器 /app/app
+      - ./static:/app/static       # 前端代码：宿主机 ./static → 容器 /app/static
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload  # 覆盖 Dockerfile 的启动命令；--reload 表示改代码自动重启（开发模式用）
+    environment:                   # 环境变量：代码里通过 os.environ 读取
+      DATABASE_URL: mysql+pymysql://todo:todo@db:3306/todo?charset=utf8mb4  # 数据库连接串：驱动://用户:密码@主机:端口/库名；主机用服务名 db 而不是 localhost
+      SECRET_KEY: change-me-in-production  # 应用密钥（当前是占位值，正式上线前必须换成随机字符串并保密）
+    depends_on:                    # 依赖关系：api 要等 db 就绪后再启动
       db:
-        condition: service_healthy
+        condition: service_healthy # 必须等 db 的健康检查通过才启动，避免应用启动时连不上数据库
 
+  # ---------------------------------------------------------------
+  # 服务二：db —— MySQL 8.0 数据库容器（存储任务数据）
+  # ---------------------------------------------------------------
   db:
-    image: mysql:8.0
-    container_name: todo-db
-    command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_DATABASE: todo
-      MYSQL_USER: todo
-      MYSQL_PASSWORD: todo
-      MYSQL_ROOT_PASSWORD: 123456
+    image: mysql:8.0               # 直接使用官方 MySQL 8.0 镜像（不自己构建）
+    container_name: todo-db        # 固定容器名
+    command: --default-authentication-plugin=mysql_native_password  # 兼容老式密码认证插件（当前 8.0 镜像可用，新版本已弃用该参数）
+    environment:                   # 初始化数据库的环境变量（只在数据卷为空、首次启动时生效）
+      MYSQL_DATABASE: todo         # 自动创建数据库 todo
+      MYSQL_USER: todo             # 创建普通用户 todo
+      MYSQL_PASSWORD: todo         # 该用户的密码 todo
+      MYSQL_ROOT_PASSWORD: 123456  # root 超级用户密码（仅供管理用，应用不用它连接）
     ports:
-      - "3306:3306"
+      - "3306:3306"                # 端口映射：宿主机 3306 → 容器 3306（方便用 Navicat 等工具直连数据库）
     volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - mysql_data:/var/lib/mysql  # 数据卷：数据库文件存在命名卷里，容器删除后数据依然保留
+    healthcheck:                   # 健康检查：让 api 服务知道 db 什么时候真正可用
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]  # 在容器里执行 mysqladmin ping，返回 0 表示数据库已就绪
+      interval: 5s                 # 每 5 秒检查一次
+      timeout: 5s                  # 单次检查最多等待 5 秒
+      retries: 5                   # 连续失败 5 次判定为不健康
 
+# ---------------------------------------------------------------
+# 顶层命名卷：声明一个由 Docker 引擎统一管理的存储空间
+# ---------------------------------------------------------------
 volumes:
-  mysql_data:   # 在文件最底部声明顶层命名卷 mysql_data，由 Docker 引擎在底层统一管理其存储空间。
+  mysql_data:                      # 上面 db 服务引用的数据卷，数据真正存在这里
