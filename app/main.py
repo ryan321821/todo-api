@@ -6,6 +6,7 @@ FastAPI 应用入口
 - 健康检查接口
 - 任务（Task）的增删改查接口
 """
+
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
@@ -109,7 +110,7 @@ def read_tasks(
     # 按创建时间倒序（最新的排最前）
     query = query.order_by(Task.created_at.desc())
 
-    total = query.count()          # 符合条件的总数
+    total = query.count()  # 符合条件的总数
     tasks = query.offset(skip).limit(limit).all()  # 分页取数据
 
     return TaskListResponse(total=total, tasks=tasks)
