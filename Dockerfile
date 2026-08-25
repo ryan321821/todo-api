@@ -9,7 +9,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 # 先复制依赖清单并安装 —— 利用 Docker 层缓存，改代码不用重新装依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com -r requirements.txt
 
 # 复制应用代码
 COPY app ./app

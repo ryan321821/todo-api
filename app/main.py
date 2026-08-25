@@ -6,6 +6,7 @@ FastAPI 应用入口
 - 健康检查接口
 - 任务（Task）的增删改查接口
 """
+
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
@@ -29,6 +30,10 @@ async def lifespan(app: FastAPI):
     """应用启动时自动创建数据库表（如果还不存在）"""
     Base.metadata.create_all(bind=engine)
     print("✅ 数据库表已创建/验证")
+    # 异步上下文管理器分界点：配合 @asynccontextmanager 装饰器，yield 将整个函数划分为“启动”与“关闭”两个阶段：
+    # yield 之前的代码：在 应用启动（Startup） 时执行（如自动建表、初始化连接池、预加载缓存）。
+    # yield 停留期间：应用正常对外提供服务，接收和处理 HTTP 请求。
+    # yield 之后的代码：在 应用关闭（Shutdown） 时执行（如释放连接池、清理缓存、保存状态）。
     yield
     print("🛑 应用关闭")
 
@@ -43,6 +48,7 @@ app = FastAPI(
 
 # 挂载静态文件目录：把项目根目录的 static 文件夹暴露到 /static 路径
 # 之后浏览器访问 http://localhost:8000/static/index.html 就能打开前端页面
+# 第一个static是访问路径，第二个static是本地目录名
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -105,11 +111,9 @@ def read_tasks(
     # 按优先级筛选（可选）
     if priority is not None:
         query = query.filter(Task.priority == priority)
-
     # 按创建时间倒序（最新的排最前）
     query = query.order_by(Task.created_at.desc())
-
-    total = query.count()          # 符合条件的总数
+    total = query.count()  # 符合条件的总数
     tasks = query.offset(skip).limit(limit).all()  # 分页取数据
 
     return TaskListResponse(total=total, tasks=tasks)

@@ -11,7 +11,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 # ==================== 请求模型 ====================
 
 
@@ -77,7 +76,6 @@ class TaskResponse(BaseModel):
     is_completed: bool = Field(..., description="是否完成")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
-
     # Pydantic V2 配置：允许直接从 ORM 对象（Task）转换成这个响应模型
     model_config = {"from_attributes": True}
 
