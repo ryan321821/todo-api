@@ -1,157 +1,76 @@
 """
-FastAPI 应用入口
+FastAPI 应用全局入口 (main.py)
 
-包含：
-- 应用生命周期管理（启动时自动创建数据表）
-- 健康检查接口
-- 任务（Task）的增删改查接口
+【为什么需要这个文件？】
+作为整个 Web 服务的最高调度中心，负责：
+1. 管理应用的整个生命周期（Lifespan：启动时自动建表、关闭时释放资源）；
+2. 实例化 FastAPI 核心对象；
+3. 注册全局中间件（如 CORS 跨域支持）；
+4. 托管静态文件服务（使前端页面 http://localhost:8000/static/index.html 可直接访问）；
+5. 注册并挂载所有 API 路由。
 """
 
-from fastapi.staticfiles import StaticFiles
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from .database import Base, engine, get_db
-from .models import Task
-from .schemas import (
-    MessageResponse,
-    TaskCreate,
-    TaskListResponse,
-    TaskResponse,
-    TaskUpdate,
-)
+from app.api.v1.api import api_router
+from app.core.config import settings
+from app.db.base import Base
+from app.db.session import engine
 
 
+# ==================== 应用生命周期管理 (Lifespan) ====================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用启动时自动创建数据库表（如果还不存在）"""
+    """
+    FastAPI 推荐的生命周期上下文管理器
+    - yield 之前：在应用启动 (Startup) 时执行；
+    - yield 之后：在应用关闭 (Shutdown) 时执行。
+    """
+    # 启动时：根据 Base.metadata 自动创建所有尚未在 MySQL 中存在的数据表
     Base.metadata.create_all(bind=engine)
-    print("✅ 数据库表已创建/验证")
-    # 异步上下文管理器分界点：配合 @asynccontextmanager 装饰器，yield 将整个函数划分为“启动”与“关闭”两个阶段：
-    # yield 之前的代码：在 应用启动（Startup） 时执行（如自动建表、初始化连接池、预加载缓存）。
-    # yield 停留期间：应用正常对外提供服务，接收和处理 HTTP 请求。
-    # yield 之后的代码：在 应用关闭（Shutdown） 时执行（如释放连接池、清理缓存、保存状态）。
+    print("✅ [Lifespan] 数据库表已验证/创建完成")
     yield
-    print("🛑 应用关闭")
+    # 关闭时：释放连接池或清理资源
+    print("🛑 [Lifespan] 应用已正常关闭")
 
 
-# 创建 FastAPI 应用实例
+# ==================== 创建 FastAPI 核心实例 ====================
 app = FastAPI(
-    title="迷你任务备忘录 API",
-    description="一个基于 FastAPI + Docker + MySQL 的实战示例项目",
-    version="1.0.0",
+    title=settings.PROJECT_NAME,
+    description=settings.DESCRIPTION,
+    version=settings.VERSION,
     lifespan=lifespan,
+    docs_url="/docs",      # Swagger UI 交互式文档路径
+    redoc_url="/redoc",    # ReDoc 文档路径
 )
 
-# 挂载静态文件目录：把项目根目录的 static 文件夹暴露到 /static 路径
-# 之后浏览器访问 http://localhost:8000/static/index.html 就能打开前端页面
-# 第一个static是访问路径，第二个static是本地目录名
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ==================== 注册全局中间件 ====================
+# 配置 CORS (跨源资源共享)，允许前端应用跨域发送请求
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],       # 允许所有来源（生产环境可限定特定域名）
+    allow_credentials=True,
+    allow_methods=["*"],       # 允许所有 HTTP 方法 (GET, POST, PUT, DELETE 等)
+    allow_headers=["*"],       # 允许所有请求头
+)
 
 
-# ==================== 健康检查 ====================
+# ==================== 挂载静态文件目录 ====================
+# 将本地 static 文件夹映射到 HTTP 路径 /static
+# 浏览器访问 http://localhost:8000/static/index.html 即可查看前端管理页面
+if os.path.exists(settings.STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=settings.STATIC_DIR), name="static")
 
 
-@app.get("/", tags=["系统"])
-def root():
-    """根路径：返回欢迎信息"""
-    return {"message": "🚀 迷你任务备忘录 API 正在运行", "docs": "/docs"}
+# ==================== 注册业务路由 ====================
+# 1. 挂载到根路径（支持 /、/healthz、/health、/tasks、/categories 直接访问）
+app.include_router(api_router)
 
-
-@app.get("/healthz", tags=["系统"])
-def healthz():
-    """进程级健康检查（原接口，保留）"""
-    return {"status": "ok"}
-
-
-@app.get("/health", tags=["系统"])
-def health_check(db: Session = Depends(get_db)):
-    """数据库连接健康检查"""
-    try:
-        db.execute(func.now())
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"数据库连接异常: {str(e)}")
-
-
-# ==================== 任务 CRUD 接口 ====================
-
-
-@app.post("/tasks", response_model=TaskResponse, status_code=201, tags=["任务"])
-def create_task(task: TaskCreate, db: Session = Depends(get_db)):
-    """创建新任务"""
-    db_task = Task(
-        title=task.title,
-        description=task.description,
-        priority=task.priority,
-    )
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)  # 刷新，拿到数据库生成的主键 id 和时间戳
-    return db_task
-
-
-@app.get("/tasks", response_model=TaskListResponse, tags=["任务"])
-def read_tasks(
-    skip: int = Query(0, ge=0, description="跳过条数"),
-    limit: int = Query(10, ge=1, le=100, description="返回条数"),
-    is_completed: bool | None = Query(None, description="按完成状态筛选"),
-    priority: str | None = Query(None, description="按优先级筛选"),
-    db: Session = Depends(get_db),
-):
-    """获取任务列表，支持分页和筛选"""
-    query = db.query(Task)
-
-    # 按完成状态筛选（可选）
-    if is_completed is not None:
-        query = query.filter(Task.is_completed == is_completed)
-    # 按优先级筛选（可选）
-    if priority is not None:
-        query = query.filter(Task.priority == priority)
-    # 按创建时间倒序（最新的排最前）
-    query = query.order_by(Task.created_at.desc())
-    total = query.count()  # 符合条件的总数
-    tasks = query.offset(skip).limit(limit).all()  # 分页取数据
-
-    return TaskListResponse(total=total, tasks=tasks)
-
-
-@app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["任务"])
-def read_task(task_id: int, db: Session = Depends(get_db)):
-    """获取单个任务详情"""
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if task is None:
-        raise HTTPException(status_code=404, detail=f"任务 ID {task_id} 不存在")
-    return task
-
-
-@app.put("/tasks/{task_id}", response_model=TaskResponse, tags=["任务"])
-def update_task(task_id: int, task_update: TaskUpdate, db: Session = Depends(get_db)):
-    """更新任务（只更新传入的字段）"""
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if task is None:
-        raise HTTPException(status_code=404, detail=f"任务 ID {task_id} 不存在")
-
-    # 只取请求里"确实传了"的字段，None 的忽略
-    update_data = task_update.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(task, field, value)
-
-    db.commit()
-    db.refresh(task)
-    return task
-
-
-@app.delete("/tasks/{task_id}", response_model=MessageResponse, tags=["任务"])
-def delete_task(task_id: int, db: Session = Depends(get_db)):
-    """删除任务"""
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if task is None:
-        raise HTTPException(status_code=404, detail=f"任务 ID {task_id} 不存在")
-
-    db.delete(task)
-    db.commit()
-    return MessageResponse(message=f"任务 ID {task_id} 已删除")
+# 2. 同时挂载到标准 API 版本路径 /api/v1（例如：/api/v1/tasks、/api/v1/categories）
+app.include_router(api_router, prefix=settings.API_V1_STR)
