@@ -31,7 +31,7 @@ class CRUDRole(CRUDBase[Role, RoleCreate, RoleUpdate]):
     def get_multi_with_permissions(
         self, db: Session, *, skip: int = 0, limit: int = 100
     ) -> tuple[int, list[Role]]:
-        query = db.query(Role).options(selectinload(Role.permissions).order_by(Role.id))
+        query = db.query(Role).options(selectinload(Role.permissions)).order_by(Role.id)
         total = query.count()
         roles = query.offset(skip).limit(limit).all()
         return total, roles

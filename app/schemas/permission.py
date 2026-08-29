@@ -11,7 +11,7 @@ class PermissionCreate(BaseModel):
 
 # ==================== 接口响应模型 (Response VO) ====================
 class PermissionResponse(BaseModel):
-    id: str = Field(..., description="权限ID")
+    id: int = Field(..., description="权限ID")
     code: str = Field(..., description="权限编码")
     name: str = Field(..., description="权限名称")
     description: Optional[str] = Field(None, description="权限说明")

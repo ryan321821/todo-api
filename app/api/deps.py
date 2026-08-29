@@ -107,7 +107,7 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
 
 def require_permissions(*required_permissions: str):
     def checker(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.is_supueruser:
+        if current_user.is_superuser:
             return current_user
 
         user_perms = {
