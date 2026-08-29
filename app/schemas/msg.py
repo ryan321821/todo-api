@@ -16,5 +16,7 @@ class MessageResponse(BaseModel):
     常用于 DELETE 或无实体返回的接口响应
     """
 
-    message: str = Field(..., description="操作结果说明信息", examples=["任务 ID 1 已删除"])
+    message: str = Field(
+        ..., description="操作结果说明信息", examples=["任务 ID 1 已删除"]
+    )
     id: Optional[int] = Field(None, description="被操作的相关资源 ID", examples=[1])

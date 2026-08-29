@@ -858,7 +858,7 @@ def init_seed_data(db: Session) -> None:
         db.add(user_role)
         db.flush()
 
-    # 3. 超级管理员
+    # 3. 超级管理员（这个是可以登录的账号）
     admin = db.query(User).filter(User.username == settings.FIRST_SUPERUSER).first()
     if not admin:
         admin = User(
@@ -1031,6 +1031,7 @@ from app.schemas.user import UserCreate, UserUpdate
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
+    # *：表示强制要求 * 后面的所有参数必须使用“关键字参数（Keyword Arguments）”的形式进行传递
     def get_by_username(self, db: Session, *, username: str) -> Optional[User]:
         return db.query(User).filter(User.username == username).first()
 

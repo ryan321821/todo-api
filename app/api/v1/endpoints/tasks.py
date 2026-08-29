@@ -12,6 +12,7 @@
 
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from app.models.user import User
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -21,6 +22,12 @@ from app.schemas.task import TaskCreate, TaskListResponse, TaskResponse, TaskUpd
 
 # 实例化当前模块的子路由器
 router = APIRouter()
+
+def _can_access_task(db_task,current_user:User) -> bool:
+    """资源归属判断：超级管理员可访问一切，普通用户只能访问自己的任务"""
+    if current_user.is_superuser:
+        return True
+    return db_task is not None and db_task.owner_id == current_user.id
 
 
 @router.post(

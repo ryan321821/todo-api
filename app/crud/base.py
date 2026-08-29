@@ -35,12 +35,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         """
         self.model = model
 
-    def get(self, db: Session, id: Any) -> Optional[ModelType]:
+    def get(self, db: Session, *, id: Any) -> Optional[ModelType]:
         """
         根据主键 ID 查询单条记录
         对应 SQL: SELECT * FROM 表名 WHERE id = :id LIMIT 1;
         """
         return db.query(self.model).filter(self.model.id == id).first()
+
+    # *：表示强制要求 * 后面的所有参数必须使用“关键字参数（Keyword Arguments）”的形式进行传递
 
     def get_multi(
         self, db: Session, *, skip: int = 0, limit: int = 100
@@ -56,13 +58,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         创建新记录
         对应 SQL: INSERT INTO 表名 (...) VALUES (...);
         """
-        # 将 Pydantic 请求模型转为 Python 字典
+        # model_dump()方法将 Pydantic 请求模型转为 Python 字典
         obj_in_data = obj_in.model_dump()
         # 解包字典创建 ORM 模型实例
-        db_obj = self.model(**obj_in_data)
+        db_obj = self.model(**obj_in_data)  # **：作用是字典解包，展开为关键字参数
         db.add(db_obj)
-        db.commit()          # 提交事务写入 MySQL
-        db.refresh(db_obj)   # 刷新对象以获取数据库生成的自增 ID 和默认时间戳
+        db.commit()  # 提交事务写入 MySQL
+        db.refresh(db_obj)  # 刷新对象以获取数据库生成的自增 ID 和默认时间戳
         return db_obj
 
     def update(
@@ -87,8 +89,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if hasattr(db_obj, field):
                 setattr(db_obj, field, value)
 
-        db.commit()          # 提交事务
-        db.refresh(db_obj)   # 刷新获取最新的 updated_at 时间戳
+        db.commit()  # 提交事务
+        db.refresh(db_obj)  # 刷新获取最新的 updated_at 时间戳
         return db_obj
 
     def remove(self, db: Session, *, id: int) -> Optional[ModelType]:
