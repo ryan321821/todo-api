@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 
 from app.schemas.category import CategoryResponse
 
-
 # ==================== 客户端请求模型 (Request DTO) ====================
 
 
@@ -95,6 +94,7 @@ class TaskResponse(BaseModel):
     priority: str = Field(..., description="任务优先级")
     is_completed: bool = Field(..., description="是否已完成")
     category_id: Optional[int] = Field(None, description="所属分类ID")
+    owner_id: int = Field(..., description="所属用户ID")
     category: Optional[CategoryResponse] = Field(None, description="所属分类对象信息")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="最后更新时间")

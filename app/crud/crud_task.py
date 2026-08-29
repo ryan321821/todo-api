@@ -20,6 +20,8 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
     Task 专属数据操作类
     """
 
+    """按筛选条件批量查询多条数据"""
+
     def get_multi_with_filter(
         self,
         db: Session,
@@ -65,6 +67,19 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         tasks = query.offset(skip).limit(limit).all()
 
         return total, tasks
+
+    def create_with_owner(
+        self, db: Session, *, obj_in: TaskCreate, owner_id: int
+    ) -> Task:
+        """
+        创建任务，把归属用户由后端写入，避免前端伪造 owner_id
+        """
+        obj_in_data = obj_in.model_dump()
+        db_obj = self.model(**obj_in_data, owner_id=owner_id)
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
 
 
 # 实例化 Task 的 CRUD 单例对象，外部直接调用 crud.task.xxx

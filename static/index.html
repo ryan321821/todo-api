@@ -1,920 +1,2029 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>任务备忘录 - Todo & Category API</title>
+  <title>迷你任务备忘录 API 控制台</title>
   <style>
-    /* ==================== 全局基础样式 ==================== */
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --border: #e1e6f0;
+      --text: #263249;
+      --muted: #7b8497;
+      --primary: #3f6df4;
+      --primary-dark: #2e56cf;
+      --primary-soft: #edf2ff;
+      --danger: #e5484d;
+      --success: #2f9e6e;
+      --warning: #c78712;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(25, 38, 74, 0.06);
+    }
+
     * {
       box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
       margin: 0;
-      padding: 0;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: #f4f6f9;
-      color: #2c3e50;
-      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      font-size: 14px;
       line-height: 1.5;
     }
 
-    .container {
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 30px 16px 80px;
+    button,
+    input,
+    select,
+    textarea {
+      font-family: inherit;
+      font-size: 14px;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 24px;
+    button {
+      cursor: pointer;
     }
 
-    header h1 {
-      font-size: 30px;
-      color: #1f6feb;
+    .hidden {
+      display: none !important;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .danger {
+      color: var(--danger);
+    }
+
+    .success {
+      color: var(--success);
+    }
+
+    /* ============ 登录 ============ */
+    .auth-screen {
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      padding: 24px;
+      background: radial-gradient(circle at 15% 15%, rgba(63, 109, 244, 0.16), transparent 30%),
+        radial-gradient(circle at 85% 20%, rgba(47, 158, 110, 0.10), transparent 26%), var(--bg);
     }
 
-    header p {
-      margin-top: 6px;
-      color: #6c757d;
-      font-size: 14px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-      padding: 22px;
-      margin-bottom: 20px;
-      border: 1px solid #eaeef2;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    /* ==================== 表单与通用控件 ==================== */
-    .form-row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    input[type="text"],
-    textarea,
-    select {
+    .auth-box {
       width: 100%;
-      padding: 10px 14px;
-      border: 1px solid #dcdfe6;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-      transition: all 0.2s;
-      background: #fafbfc;
+      max-width: 440px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 30px;
     }
 
-    input[type="text"]:focus,
-    textarea:focus,
-    select:focus {
-      border-color: #1f6feb;
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
-    }
-
-    #task-title {
-      flex: 3;
-      min-width: 220px;
-    }
-
-    #task-category {
-      flex: 1.5;
-      min-width: 130px;
-    }
-
-    #task-priority {
-      flex: 1.2;
-      min-width: 110px;
-    }
-
-    textarea {
-      margin-top: 12px;
-      resize: vertical;
-      min-height: 60px;
-    }
-
-    .btn-primary {
-      margin-top: 12px;
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      background: #1f6feb;
+    .auth-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
       color: #fff;
-      font-size: 15px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-    }
-
-    .btn-primary:hover {
-      background: #175fd0;
-    }
-
-    .btn-primary:active {
-      transform: scale(0.99);
-    }
-
-    /* ==================== 分类管理面板 ==================== */
-    .category-section {
-      background: #fafbfc;
-      border: 1px dashed #d0d7de;
-      border-radius: 8px;
-      padding: 14px 16px;
+      font-weight: 800;
+      font-size: 22px;
+      background: linear-gradient(135deg, #3f6df4, #6a4fd8);
       margin-bottom: 16px;
     }
 
-    .category-form-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-top: 8px;
-      flex-wrap: wrap;
+    .auth-title {
+      margin: 0 0 6px;
+      font-size: 22px;
+      color: #18203a;
     }
 
-    .category-form-row input[type="text"] {
-      flex: 2;
-      min-width: 140px;
-      padding: 8px 12px;
-    }
-
-    .color-picker-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .auth-subtitle {
+      margin: 0 0 22px;
+      color: var(--muted);
       font-size: 13px;
-      color: #666;
     }
 
-    input[type="color"] {
-      -webkit-appearance: none;
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      padding: 0;
-      background: none;
-    }
-
-    input[type="color"]::-webkit-color-swatch-wrapper {
-      padding: 0;
-    }
-
-    input[type="color"]::-webkit-color-swatch {
-      border: 2px solid #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
-    }
-
-    .btn-small {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 6px;
-      background: #2ea44f;
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.2s;
-    }
-
-    .btn-small:hover {
-      background: #2c974b;
-    }
-
-    .category-tag-list {
+    .auth-tabs {
       display: flex;
       gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
+      margin-bottom: 20px;
     }
 
-    .cat-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 10px;
-      border-radius: 12px;
+    .auth-tabs button {
+      flex: 1;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      padding: 9px;
+      border-radius: 10px;
+    }
+
+    .auth-tabs button.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 13px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-weight: 650;
+      font-size: 13px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 11px;
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(63, 109, 244, 0.12);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 9px 13px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 650;
+      transition: background 0.16s ease, transform 0.12s ease;
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn.danger {
+      background: #fff0f0;
+      color: var(--danger);
+      border: 1px solid #ffd3d5;
+    }
+
+    .btn.small {
+      padding: 6px 9px;
       font-size: 12px;
-      color: #fff;
-      font-weight: 500;
     }
 
-    .cat-badge-del {
-      cursor: pointer;
-      font-size: 14px;
-      line-height: 1;
-      opacity: 0.8;
-      transition: opacity 0.2s;
+    .btn.block {
+      width: 100%;
     }
 
-    .cat-badge-del:hover {
-      opacity: 1;
-      font-weight: bold;
+    .auth-hint {
+      margin-top: 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
     }
 
-    /* ==================== 分类胶囊筛选栏 ==================== */
-    .filter-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 14px;
-    }
-
-    .filter-chip {
-      padding: 6px 14px;
-      border-radius: 20px;
-      background: #f0f2f5;
-      border: 1px solid #e1e4e8;
+    .auth-error {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff0f0;
+      color: var(--danger);
       font-size: 13px;
-      color: #555;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
+    }
+
+    /* ============ 应用布局 ============ */
+    .app {
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: fixed;
+      z-index: 20;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 228px;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      background: #141b30;
+      color: #dfe5f3;
+    }
+
+    .brand {
       display: flex;
       align-items: center;
-      gap: 6px;
-    }
-
-    .filter-chip:hover {
-      background: #e4e7eb;
-    }
-
-    .filter-chip.active {
-      background: #1f6feb;
+      gap: 10px;
+      padding: 4px 8px 20px;
       color: #fff;
-      border-color: #1f6feb;
-      font-weight: 500;
+      font-weight: 750;
+      font-size: 16px;
     }
 
-    .color-dot {
-      width: 8px;
-      height: 8px;
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #3f6df4, #6a4fd8);
+      font-weight: 800;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow-y: auto;
+    }
+
+    .nav-btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: #aeb7cb;
+      text-align: left;
+      padding: 11px 12px;
+      transition: background 0.16s ease, color 0.16s ease;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: #fff;
+    }
+
+    .nav-btn.active {
+      background: rgba(99, 125, 255, 0.18);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 12px;
+    }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
-      display: inline-block;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #3f6df4, #6a4fd8);
+      color: #fff;
+      font-weight: 800;
     }
 
-    /* ==================== 任务列表项 ==================== */
-    .list-header {
+    .logout-btn {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: transparent;
+      color: #dfe5f3;
+      border-radius: 9px;
+      padding: 8px;
+    }
+
+    .main {
+      margin-left: 228px;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
+      gap: 16px;
+      height: 66px;
+      padding: 0 24px;
+      background: rgba(255, 255, 255, 0.88);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
     }
 
-    .stats {
-      font-size: 13px;
-      color: #888;
+    .topbar-title {
+      font-size: 17px;
+      font-weight: 750;
+      color: #18203a;
     }
 
-    .btn-refresh {
-      padding: 6px 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 6px;
-      background: #fff;
-      color: #555;
-      font-size: 13px;
-      cursor: pointer;
+    .topbar-subtitle {
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    .btn-refresh:hover {
-      background: #f5f5f5;
+    .content {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 22px 24px 40px;
     }
 
-    .task-item {
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .page-head {
       display: flex;
-      align-items: flex-start;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .page-head h2 {
+      margin: 0;
+      font-size: 22px;
+      color: #18203a;
+    }
+
+    .page-head p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 750;
+      color: #18203a;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
-      padding: 14px 6px;
-      border-bottom: 1px solid #f0f2f5;
-      transition: background 0.15s;
+      margin-bottom: 16px;
     }
 
-    .task-item:hover {
-      background: #fafbfc;
-      border-radius: 8px;
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
     }
 
-    .task-item:last-child {
-      border-bottom: none;
+    .stat-label {
+      color: var(--muted);
+      font-size: 13px;
     }
 
-    .task-item input[type="checkbox"] {
-      width: 19px;
-      height: 19px;
-      margin-top: 3px;
-      cursor: pointer;
-      flex-shrink: 0;
-      accent-color: #1f6feb;
+    .stat-value {
+      margin-top: 4px;
+      font-size: 30px;
+      font-weight: 800;
+      color: #18203a;
     }
 
-    .task-body {
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+      gap: 14px;
+    }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: #fff;
+    }
+
+    .task-row .title {
       flex: 1;
       min-width: 0;
+      font-weight: 650;
     }
 
-    .task-title {
-      font-size: 15px;
-      font-weight: 600;
-      word-break: break-word;
-      color: #24292f;
-    }
-
-    .task-description {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #656d76;
-      word-break: break-word;
-    }
-
-    .task-meta {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #8c959f;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    /* 任务完成样式 */
-    .task-item.completed .task-title {
+    .task-row.completed .title {
       text-decoration: line-through;
-      color: #8c959f;
+      color: var(--muted);
     }
 
-    .task-item.completed .task-description {
-      color: #afb8c1;
-    }
-
-    /* 优先级徽章 */
-    .badge {
+    .tag {
       display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      color: #fff;
-      font-weight: 500;
-    }
-
-    .badge.low { background: #52c41a; }
-    .badge.medium { background: #fa8c16; }
-    .badge.high { background: #f5222d; }
-
-    .btn-delete {
-      padding: 5px 12px;
-      border: 1px solid #ffccc7;
-      border-radius: 6px;
-      background: #fff1f0;
-      color: #cf1322;
+      padding: 3px 7px;
+      border-radius: 999px;
       font-size: 12px;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.2s;
+      white-space: nowrap;
     }
 
-    .btn-delete:hover {
-      background: #ffccc7;
+    .tag.high {
+      color: #c51f2e;
+      background: #ffe8ea;
+    }
+
+    .tag.medium {
+      color: #a46408;
+      background: #fff3d6;
+    }
+
+    .tag.low {
+      color: #1d7a52;
+      background: #e6f8ef;
+    }
+
+    .tag.gray {
+      color: #68728a;
+      background: #eef1f7;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .category-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .category-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--cat-color, #3f6df4);
+    }
+
+    .category-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-weight: 750;
+      color: #18203a;
+    }
+
+    .category-desc {
+      min-height: 36px;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 10px 0 12px;
+    }
+
+    .category-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .table th,
+    .table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th {
+      background: #f7f8fc;
+      color: #3a4560;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .table tr:last-child td {
+      border-bottom: 0;
     }
 
     .empty {
+      padding: 28px;
       text-align: center;
-      color: #8c959f;
-      padding: 36px 0;
-      font-size: 14px;
+      color: var(--muted);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      background: #fafbfe;
     }
 
-    /* ==================== 浮层提示信息 ==================== */
-    .message {
+    .api-response {
+      margin-top: 18px;
+      background: #111827;
+      color: #d8e0f0;
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .api-response-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: #9ca8c2;
+      font-size: 12px;
+    }
+
+    .api-response pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #cbd5e1;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .toast {
       position: fixed;
-      top: 16px;
+      z-index: 100;
+      top: 18px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 999;
-      padding: 10px 22px;
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #18203a;
       color: #fff;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
-      max-width: 90%;
-      animation: fadeIn 0.2s ease-out;
+      font-size: 13px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translate(-50%, -10px); }
-      to { opacity: 1; transform: translate(-50%, 0); }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
-    .message.success { background: #52c41a; }
-    .message.error { background: #f5222d; }
-    .message.info { background: #1f6feb; }
+    .toast.error {
+      background: #b4232f;
+    }
 
-    footer {
-      text-align: center;
-      color: #8c959f;
-      font-size: 12px;
-      margin-top: 30px;
+    .toast.success {
+      background: #1f7a52;
+    }
+
+    .inline-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @media (max-width: 960px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .content {
+        padding: 18px 16px 30px;
+      }
+
+      .stat-grid,
+      .dashboard-grid,
+      .category-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .menu-toggle {
+        display: inline-flex !important;
+      }
+    }
+
+    .menu-toggle {
+      display: none;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .sidebar-overlay {
+      display: none;
+    }
+
+    @media (max-width: 960px) {
+      .sidebar-overlay.show {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 15;
+        background: rgba(0, 0, 0, 0.38);
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <header>
-      <h1>📝 任务备忘录 Pro</h1>
-      <p>任务管理 + 自定义分类联动 · 基于 FastAPI 企业级多层分层架构</p>
-    </header>
+  <noscript>
+    <div
+      style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: #f4f6fb; color: #18203a; font-family: sans-serif;">
+      此页面需要启用 JavaScript 才能运行。
+    </div>
+  </noscript>
 
-    <!-- 分类管理与快捷添加卡片 -->
-    <section class="card">
-      <div class="section-title">
-        <span>🏷️ 分类管理</span>
-        <span style="font-size: 12px; color: #888; font-weight: normal;">创建分类后可在任务中自由归类</span>
-      </div>
-      <div class="category-section">
-        <form id="category-form" class="category-form-row">
-          <input type="text" id="category-name" placeholder="新分类名称（如：工作/学习）" maxlength="50" required>
-          <div class="color-picker-wrapper">
-            <span>色彩：</span>
-            <input type="color" id="category-color" value="#1890ff" title="选择分类颜色">
-          </div>
-          <button type="submit" class="btn-small">＋ 新增分类</button>
-        </form>
-        <div class="category-tag-list" id="category-tags">
-          <!-- 动态加载已有分类标签 -->
-        </div>
-      </div>
-    </section>
+  <!-- ==================== 登录 / 注册 ==================== -->
+  <div id="authScreen" class="auth-screen hidden">
+    <div class="auth-box">
+      <div class="auth-logo">T</div>
+      <h1 class="auth-title">迷你任务备忘录 API</h1>
+      <p class="auth-subtitle">纯原生前端 · 不依赖 CDN · 直接测试 FastAPI 接口</p>
 
-    <!-- 新增任务表单卡片 -->
-    <section class="card">
-      <div class="section-title">
-        <span>✍️ 新建任务</span>
+      <div class="auth-tabs">
+        <button id="tabLogin" class="active" type="button">登录</button>
+        <button id="tabRegister" type="button">注册</button>
       </div>
-      <form id="task-form">
-        <div class="form-row">
-          <input type="text" id="task-title" placeholder="任务标题（必填）" maxlength="100" required>
-          <select id="task-category">
-            <option value="">📂 选择所属分类（可选）</option>
-            <!-- 动态填充分类选项 -->
-          </select>
-          <select id="task-priority">
-            <option value="low">🟢 低优先级</option>
-            <option value="medium" selected>🟠 中优先级</option>
-            <option value="high">🔴 高优先级</option>
-          </select>
-        </div>
-        <textarea id="task-description" placeholder="任务详细描述（选填，最多 500 字）" maxlength="500"></textarea>
-        <button type="submit" class="btn-primary">＋ 添加任务</button>
-      </form>
-    </section>
 
-    <!-- 任务列表卡片 -->
-    <section class="card">
-      <div class="list-header">
-        <h2>任务列表</h2>
+      <form id="loginForm" class="form-grid">
         <div>
-          <span class="stats" id="stats"></span>
-          <button class="btn-refresh" id="refresh-btn" type="button">🔄 刷新</button>
+          <label for="loginUsername">用户名</label>
+          <input id="loginUsername" autocomplete="username" placeholder="请输入用户名">
         </div>
-      </div>
-
-      <!-- 分类胶囊过滤栏 -->
-      <div class="filter-bar" id="category-filters">
-        <div class="filter-chip active" data-cat-id="">
-          <span>全部任务</span>
+        <div>
+          <label for="loginPassword">密码</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="请输入密码">
         </div>
-        <!-- 动态填充各分类筛选胶囊 -->
-      </div>
+        <button class="btn block" type="submit">登录系统</button>
+        <div class="auth-hint">默认管理员：admin / admin123456</div>
+      </form>
 
-      <!-- 任务项展示容器 -->
-      <div id="task-list"></div>
-      <div class="empty" id="empty-state">加载中...</div>
-    </section>
+      <form id="registerForm" class="form-grid hidden">
+        <div>
+          <label for="regUsername">用户名</label>
+          <input id="regUsername" placeholder="3-50 位字母、数字或下划线">
+        </div>
+        <div>
+          <label for="regEmail">邮箱</label>
+          <input id="regEmail" type="email" placeholder="name@example.com">
+        </div>
+        <div>
+          <label for="regPassword">密码</label>
+          <input id="regPassword" type="password" placeholder="至少 8 位">
+        </div>
+        <div>
+          <label for="regConfirm">确认密码</label>
+          <input id="regConfirm" type="password" placeholder="请再次输入密码">
+        </div>
+        <button class="btn block" type="submit">创建账号</button>
+      </form>
 
-    <footer>
-      后端接口挂载于 <code>/api/v1/tasks</code> 与 <code>/api/v1/categories</code> · 兼容直接访问 <code>/tasks</code>
-    </footer>
+      <div id="authError" class="auth-error hidden"></div>
+    </div>
   </div>
 
-  <!-- 提示消息浮层 -->
-  <div class="message" id="message" hidden></div>
+  <!-- ==================== 主应用 ==================== -->
+  <div id="app" class="app hidden">
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">T</span>
+        <span>任务备忘录 API</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-page="dashboard" type="button">工作台总览</button>
+        <button class="nav-btn" data-page="tasks" type="button">任务管理</button>
+        <button class="nav-btn" data-page="categories" type="button">分类管理</button>
+        <button class="nav-btn" data-page="users" data-perm="user:read" type="button">用户管理</button>
+        <button class="nav-btn" data-page="roles" data-perm="role:read" type="button">角色权限</button>
+        <button class="nav-btn" data-page="profile" type="button">个人中心</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <span class="avatar" id="userAvatar">U</span>
+          <span id="sidebarUserName">未登录</span>
+        </div>
+        <button id="logoutBtn" class="logout-btn" type="button">退出登录</button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div>
+          <div class="topbar-title" id="pageTitle">工作台总览</div>
+          <div class="topbar-subtitle" id="pageSubtitle">FastAPI 接口操作演示</div>
+        </div>
+        <button id="menuToggle" class="menu-toggle" type="button">☰</button>
+      </header>
+
+      <main class="content">
+        <!-- 总览 -->
+        <section id="page-dashboard" class="page active">
+          <div class="page-head">
+            <div>
+              <h2>工作台总览</h2>
+              <p>统计当前数据库中的任务与分类数据</p>
+            </div>
+            <button class="btn ghost" id="refreshDashboard" type="button">刷新数据</button>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">全部任务</div>
+              <div class="stat-value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">已完成</div>
+              <div class="stat-value" id="statCompleted">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">进行中</div>
+              <div class="stat-value" id="statPending">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">分类数量</div>
+              <div class="stat-value" id="statCategories">0</div>
+            </div>
+          </div>
+          <div class="dashboard-grid">
+            <div class="panel">
+              <div class="panel-title">最近任务</div>
+              <div id="dashboardTasks" class="list"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">分类分布</div>
+              <div id="dashboardCategories" class="list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 任务 -->
+        <section id="page-tasks" class="page">
+          <div class="page-head">
+            <div>
+              <h2>任务管理</h2>
+              <p>对应接口：GET / POST / PUT / DELETE /api/v1/tasks</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title" id="taskFormTitle">新建任务</div>
+            <form id="taskForm">
+              <input id="taskId" type="hidden">
+              <div class="form-grid">
+                <div>
+                  <label for="taskTitle">任务标题</label>
+                  <input id="taskTitle" maxlength="100" placeholder="例如：完成项目文档">
+                </div>
+                <div>
+                  <label for="taskDescription">详细描述</label>
+                  <textarea id="taskDescription" maxlength="500" placeholder="任务背景、步骤或备注"></textarea>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+                  <div>
+                    <label for="taskPriority">优先级</label>
+                    <select id="taskPriority">
+                      <option value="medium">中优先级</option>
+                      <option value="high">高优先级</option>
+                      <option value="low">低优先级</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="taskCategory">所属分类</label>
+                    <select id="taskCategory">
+                      <option value="">未分类</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="inline-actions" style="margin-top: 12px">
+                <button class="btn" id="taskSubmitBtn" type="submit">创建任务</button>
+                <button class="btn ghost" id="taskCancelBtn" type="button">取消编辑</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">任务列表</div>
+            <div id="taskList" class="list"></div>
+          </div>
+        </section>
+
+        <!-- 分类 -->
+        <section id="page-categories" class="page">
+          <div class="page-head">
+            <div>
+              <h2>分类管理</h2>
+              <p>对应接口：GET / POST / PUT / DELETE /api/v1/categories</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title" id="categoryFormTitle">新建分类</div>
+            <form id="categoryForm">
+              <input id="categoryId" type="hidden">
+              <div class="form-grid">
+                <div>
+                  <label for="categoryName">分类名称</label>
+                  <input id="categoryName" maxlength="50" placeholder="例如：工作、学习、生活">
+                </div>
+                <div>
+                  <label for="categoryColor">分类颜色</label>
+                  <input id="categoryColor" type="color" value="#3f6df4">
+                </div>
+                <div>
+                  <label for="categoryDescription">分类描述</label>
+                  <textarea id="categoryDescription" maxlength="200" placeholder="这个分类主要用来放什么任务？"></textarea>
+                </div>
+              </div>
+              <div class="inline-actions" style="margin-top: 12px">
+                <button class="btn" id="categorySubmitBtn" type="submit">创建分类</button>
+                <button class="btn ghost" id="categoryCancelBtn" type="button">取消编辑</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="category-grid" id="categoryList"></div>
+        </section>
+
+        <!-- 用户 -->
+        <section id="page-users" class="page">
+          <div class="page-head">
+            <div>
+              <h2>用户管理</h2>
+              <p>对应接口：GET / POST / PUT / DELETE /api/v1/users</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title" id="userFormTitle">新建用户</div>
+            <form id="userForm">
+              <input id="userId" type="hidden">
+              <div class="form-grid">
+                <div>
+                  <label for="userUsername">用户名</label>
+                  <input id="userUsername" maxlength="50" placeholder="3-50 位字母、数字或下划线">
+                </div>
+                <div>
+                  <label for="userEmail">邮箱</label>
+                  <input id="userEmail" type="email" placeholder="name@example.com">
+                </div>
+                <div>
+                  <label for="userPassword" id="userPasswordLabel">初始密码</label>
+                  <input id="userPassword" type="password" placeholder="至少 8 位">
+                </div>
+                <div>
+                  <label for="userRoles">角色编码（逗号分隔）</label>
+                  <input id="userRoles" placeholder="例如：user,admin">
+                </div>
+                <div class="inline-actions">
+                  <label style="margin: 0"><input id="userActive" type="checkbox" checked> 启用账号</label>
+                  <label style="margin: 0"><input id="userSuperuser" type="checkbox"> 超级管理员</label>
+                </div>
+              </div>
+              <div class="inline-actions" style="margin-top: 12px">
+                <button class="btn" id="userSubmitBtn" type="submit">创建用户</button>
+                <button class="btn ghost" id="userCancelBtn" type="button">取消编辑</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">用户列表</div>
+            <div style="overflow-x: auto">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>用户</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>超级管理员</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 角色 -->
+        <section id="page-roles" class="page">
+          <div class="page-head">
+            <div>
+              <h2>角色权限</h2>
+              <p>对应接口：GET / POST / PUT / DELETE /api/v1/roles</p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title" id="roleFormTitle">新建角色</div>
+            <form id="roleForm">
+              <input id="roleId" type="hidden">
+              <div class="form-grid">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px">
+                  <div>
+                    <label for="roleCode">角色编码</label>
+                    <input id="roleCode" maxlength="50" placeholder="例如：editor">
+                  </div>
+                  <div>
+                    <label for="roleName">角色名称</label>
+                    <input id="roleName" maxlength="50" placeholder="例如：内容编辑">
+                  </div>
+                </div>
+                <div>
+                  <label for="roleDescription">角色说明</label>
+                  <textarea id="roleDescription" maxlength="200" placeholder="简要说明这个角色的职责范围"></textarea>
+                </div>
+                <div>
+                  <label for="rolePermissions">权限编码（逗号分隔）</label>
+                  <input id="rolePermissions" placeholder="例如：task:read,task:write">
+                  <div class="muted" style="margin-top: 5px; font-size: 12px">
+                    可用权限：task:read, task:write, task:delete, category:read, category:write, user:read, user:write,
+                    role:read, role:write
+                  </div>
+                </div>
+              </div>
+              <div class="inline-actions" style="margin-top: 12px">
+                <button class="btn" id="roleSubmitBtn" type="submit">创建角色</button>
+                <button class="btn ghost" id="roleCancelBtn" type="button">取消编辑</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">角色列表</div>
+            <div id="roleList" class="list"></div>
+          </div>
+        </section>
+
+        <!-- 个人中心 -->
+        <section id="page-profile" class="page">
+          <div class="page-head">
+            <div>
+              <h2>个人中心</h2>
+              <p>对应接口：GET / PUT /api/v1/users/me</p>
+            </div>
+          </div>
+
+          <div class="panel" style="max-width: 640px">
+            <div class="panel-title">当前账号信息</div>
+            <form id="profileForm">
+              <div class="form-grid">
+                <div>
+                  <label for="profileUsername">用户名</label>
+                  <input id="profileUsername" maxlength="50">
+                </div>
+                <div>
+                  <label for="profileEmail">邮箱</label>
+                  <input id="profileEmail" type="email">
+                </div>
+                <div>
+                  <label for="profilePassword">新密码（留空表示不修改）</label>
+                  <input id="profilePassword" type="password" placeholder="至少 8 位">
+                </div>
+              </div>
+              <div class="inline-actions" style="margin-top: 12px">
+                <button class="btn" type="submit">保存修改</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- API 响应查看器 -->
+        <div class="api-response">
+          <div class="api-response-header">
+            <span id="apiResponseMeta">最近一次 API 响应</span>
+            <button class="btn ghost small" id="clearResponseBtn" type="button">清空</button>
+          </div>
+          <pre id="apiResponseBody">暂无请求</pre>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
 
   <script>
-    // ====================================================================
-    // API 路径定义（统一使用企业级 /api/v1 版本前缀）
-    // ====================================================================
-    const API_CATEGORIES = "/api/v1/categories";
+    (function () {
+      const API_BASE = '/api/v1';
+      const TOKEN_KEY = 'todo_token';
+      const USER_KEY = 'todo_user';
 
-    // 全局状态
-    let categoriesList = [];       // 缓存所有分类
-    let selectedCategoryId = null; // 当前选中的筛选分类 ID (null 为全部)
-
-    // DOM 元素引用
-    const taskForm = document.getElementById("task-form");
-    const taskTitleInput = document.getElementById("task-title");
-    const taskCategorySelect = document.getElementById("task-category");
-    const taskPrioritySelect = document.getElementById("task-priority");
-    const taskDescInput = document.getElementById("task-description");
-    const taskList = document.getElementById("task-list");
-    const emptyState = document.getElementById("empty-state");
-    const statsSpan = document.getElementById("stats");
-    const refreshBtn = document.getElementById("refresh-btn");
-    const messageBox = document.getElementById("message");
-
-    const categoryForm = document.getElementById("category-form");
-    const categoryNameInput = document.getElementById("category-name");
-    const categoryColorInput = document.getElementById("category-color");
-    const categoryTagsContainer = document.getElementById("category-tags");
-    const categoryFiltersContainer = document.getElementById("category-filters");
-
-    // ====================================================================
-    // 消息提示函数
-    // ====================================================================
-    let messageTimer = null;
-    function showMessage(text, type = "info") {
-      messageBox.textContent = text;
-      messageBox.className = "message " + type;
-      messageBox.hidden = false;
-      clearTimeout(messageTimer);
-      messageTimer = setTimeout(() => {
-        messageBox.hidden = true;
-      }, 3000);
-    }
-
-    // 格式化时间字符串
-    function formatTime(value) {
-      if (!value) return "";
-      const date = new Date(value);
-      if (isNaN(date.getTime())) return "";
-      const pad = (n) => String(n).padStart(2, "0");
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    }
-
-    // 优先级展示转换
-    function priorityInfo(priority) {
-      const map = {
-        low: ["低", "low"],
-        medium: ["中", "medium"],
-        high: ["高", "high"],
+      const state = {
+        token: localStorage.getItem(TOKEN_KEY) || '',
+        user: null,
+        tasks: [],
+        categories: [],
+        users: [],
+        roles: [],
+        page: 'dashboard',
+        lastResponse: null
       };
-      const item = map[priority] || ["中", "medium"];
-      return { label: item[0], className: item[1] };
-    }
 
-    // ====================================================================
-    // 1. 分类模块交互 (CRUD)
-    // ====================================================================
+      const $ = (selector) => document.querySelector(selector);
+      const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
-    // 获取所有分类
-    async function fetchCategories() {
-      try {
-        const response = await fetch(API_CATEGORIES);
-        if (!response.ok) throw new Error("加载分类失败");
-        const data = await response.json();
-        categoriesList = data.categories || [];
-        renderCategoryUI();
-      } catch (err) {
-        console.warn("分类加载失败:", err);
+      const elements = {
+        authScreen: $('#authScreen'),
+        app: $('#app'),
+        loginForm: $('#loginForm'),
+        registerForm: $('#registerForm'),
+        authError: $('#authError'),
+        tabLogin: $('#tabLogin'),
+        tabRegister: $('#tabRegister'),
+        sidebar: $('#sidebar'),
+        sidebarOverlay: $('#sidebarOverlay'),
+        menuToggle: $('#menuToggle'),
+        logoutBtn: $('#logoutBtn'),
+        userAvatar: $('#userAvatar'),
+        sidebarUserName: $('#sidebarUserName'),
+        pageTitle: $('#pageTitle'),
+        pageSubtitle: $('#pageSubtitle'),
+        toast: $('#toast'),
+        apiResponseMeta: $('#apiResponseMeta'),
+        apiResponseBody: $('#apiResponseBody'),
+        clearResponseBtn: $('#clearResponseBtn')
+      };
+
+      const pageTitles = {
+        dashboard: ['工作台总览', 'FastAPI 接口操作演示'],
+        tasks: ['任务管理', 'GET / POST / PUT / DELETE /api/v1/tasks'],
+        categories: ['分类管理', 'GET / POST / PUT / DELETE /api/v1/categories'],
+        users: ['用户管理', 'GET / POST / PUT / DELETE /api/v1/users'],
+        roles: ['角色权限', 'GET / POST / PUT / DELETE /api/v1/roles'],
+        profile: ['个人中心', 'GET / PUT /api/v1/users/me']
+      };
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
       }
-    }
 
-    // 渲染分类相关的所有 UI（管理区标签、表单下拉框、胶囊筛选栏）
-    function renderCategoryUI() {
-      // 1. 渲染管理区已有分类徽章
-      categoryTagsContainer.innerHTML = "";
-      if (categoriesList.length === 0) {
-        categoryTagsContainer.innerHTML = `<span style="font-size:12px;color:#999;">暂无自定义分类，在上方输入名称即可创建</span>`;
-      } else {
-        categoriesList.forEach(cat => {
-          const badge = document.createElement("span");
-          badge.className = "cat-badge";
-          badge.style.backgroundColor = cat.color || "#1890ff";
-          badge.innerHTML = `
-            <span>🏷️ ${cat.name}</span>
-            <span class="cat-badge-del" title="删除该分类" onclick="deleteCategory(${cat.id})">&times;</span>
-          `;
-          categoryTagsContainer.appendChild(badge);
+      function formatDate(value) {
+        if (!value) {
+          return '-';
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return String(value);
+        }
+        return date.toLocaleString('zh-CN', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
         });
       }
 
-      // 2. 渲染新建任务表单的分类下拉选择框
-      const currentVal = taskCategorySelect.value;
-      taskCategorySelect.innerHTML = `<option value="">📂 选择所属分类（可选）</option>`;
-      categoriesList.forEach(cat => {
-        const opt = document.createElement("option");
-        opt.value = cat.id;
-        opt.textContent = `🏷️ ${cat.name}`;
-        taskCategorySelect.appendChild(opt);
-      });
-      taskCategorySelect.value = currentVal;
-
-      // 3. 渲染分类胶囊筛选栏
-      categoryFiltersContainer.innerHTML = "";
-      
-      // "全部" 胶囊
-      const allChip = document.createElement("div");
-      allChip.className = `filter-chip ${selectedCategoryId === null ? 'active' : ''}`;
-      allChip.innerHTML = `<span>全部任务</span>`;
-      allChip.onclick = () => selectCategoryFilter(null);
-      categoryFiltersContainer.appendChild(allChip);
-
-      // 各分类胶囊
-      categoriesList.forEach(cat => {
-        const chip = document.createElement("div");
-        chip.className = `filter-chip ${selectedCategoryId === cat.id ? 'active' : ''}`;
-        chip.innerHTML = `
-          <span class="color-dot" style="background-color: ${cat.color || '#1890ff'}"></span>
-          <span>${cat.name}</span>
-        `;
-        chip.onclick = () => selectCategoryFilter(cat.id);
-        categoryFiltersContainer.appendChild(chip);
-      });
-    }
-
-    // 切换分类筛选
-    function selectCategoryFilter(catId) {
-      selectedCategoryId = catId;
-      renderCategoryUI();
-      fetchTasks();
-    }
-
-    // 新增分类
-    async function addCategory(event) {
-      event.preventDefault();
-      const name = categoryNameInput.value.trim();
-      const color = categoryColorInput.value;
-
-      if (!name) {
-        showMessage("分类名称不能为空", "error");
-        return;
+      function toast(message, type) {
+        const node = elements.toast;
+        node.textContent = message;
+        node.className = 'toast show ' + (type || 'success');
+        clearTimeout(node._timer);
+        node._timer = setTimeout(() => {
+          node.className = 'toast';
+        }, 2200);
       }
 
-      try {
-        const response = await fetch(API_CATEGORIES, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, color }),
+      function setAuthError(message) {
+        if (!message) {
+          elements.authError.classList.add('hidden');
+          elements.authError.textContent = '';
+          return;
+        }
+        elements.authError.textContent = message;
+        elements.authError.classList.remove('hidden');
+      }
+
+      function extractError(data, status, fallback) {
+        const detail = data && data.detail;
+        if (Array.isArray(detail)) {
+          const text = detail.map((item) => item.msg || '').filter(Boolean).join('；');
+          if (text) {
+            return text;
+          }
+        }
+        if (typeof detail === 'string') {
+          return detail;
+        }
+        return fallback || ('请求失败，HTTP ' + status);
+      }
+
+      async function apiFetch(path, options) {
+        const method = (options && options.method) || 'GET';
+        const headers = {};
+        if (state.token) {
+          headers.Authorization = 'Bearer ' + state.token;
+        }
+        let body;
+        if (options && options.body !== undefined) {
+          headers['Content-Type'] = 'application/json';
+          body = JSON.stringify(options.body);
+        }
+
+        const response = await fetch(API_BASE + path, { method, headers, body });
+        const text = await response.text();
+        let data = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch (error) {
+          data = text;
+        }
+
+        if (!response.ok) {
+          const err = new Error(extractError(data, response.status));
+          err.status = response.status;
+          err.data = data;
+          throw err;
+        }
+
+        state.lastResponse = {
+          method,
+          path: API_BASE + path,
+          status: response.status,
+          data
+        };
+        renderLastResponse();
+        return data;
+      }
+
+      function renderLastResponse() {
+        if (!state.lastResponse) {
+          elements.apiResponseMeta.textContent = '最近一次 API 响应';
+          elements.apiResponseBody.textContent = '暂无请求';
+          return;
+        }
+        elements.apiResponseMeta.textContent = state.lastResponse.method + ' ' + state.lastResponse.path + ' · HTTP ' + state.lastResponse.status;
+        elements.apiResponseBody.textContent = JSON.stringify(state.lastResponse.data, null, 2);
+      }
+
+      function hasPermission(code) {
+        if (!state.user) {
+          return false;
+        }
+        if (state.user.is_superuser) {
+          return true;
+        }
+        return (state.user.roles || []).some((role) => {
+          return (role.permissions || []).some((perm) => perm.code === code);
         });
+      }
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.detail || "创建分类失败");
+      function refreshNav() {
+        $$('.nav-btn[data-perm]').forEach((btn) => {
+          const perm = btn.getAttribute('data-perm');
+          btn.classList.toggle('hidden', !hasPermission(perm));
+        });
+      }
+
+      function switchPage(page) {
+        if (!pageTitles[page]) {
+          page = 'dashboard';
+        }
+        state.page = page;
+        $$('.page').forEach((section) => section.classList.remove('active'));
+        $('#page-' + page).classList.add('active');
+        $$('.nav-btn').forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-page') === page));
+        elements.pageTitle.textContent = pageTitles[page][0];
+        elements.pageSubtitle.textContent = pageTitles[page][1];
+        closeSidebar();
+
+        if (page === 'profile') {
+          fillProfileForm();
+        }
+        if (page === 'users' && hasPermission('user:read')) {
+          loadUsers();
+        }
+        if (page === 'roles' && hasPermission('role:read')) {
+          loadRoles();
+        }
+      }
+
+      function openSidebar() {
+        elements.sidebar.classList.add('open');
+        elements.sidebarOverlay.classList.add('show');
+      }
+
+      function closeSidebar() {
+        elements.sidebar.classList.remove('open');
+        elements.sidebarOverlay.classList.remove('show');
+      }
+
+      function showAuth() {
+        elements.app.classList.add('hidden');
+        elements.authScreen.classList.remove('hidden');
+      }
+
+      function showApp() {
+        elements.authScreen.classList.add('hidden');
+        elements.app.classList.remove('hidden');
+        const name = state.user ? state.user.username : '未登录';
+        elements.sidebarUserName.textContent = name;
+        elements.userAvatar.textContent = name.slice(0, 1).toUpperCase();
+        refreshNav();
+        switchPage('dashboard');
+      }
+
+      function setUser(user) {
+        state.user = user;
+        if (user) {
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+        } else {
+          localStorage.removeItem(USER_KEY);
+        }
+      }
+
+      function logout() {
+        state.token = '';
+        state.user = null;
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        showAuth();
+        toast('已退出登录');
+      }
+
+      function setAuthTab(tab) {
+        const isLogin = tab === 'login';
+        elements.tabLogin.classList.toggle('active', isLogin);
+        elements.tabRegister.classList.toggle('active', !isLogin);
+        elements.loginForm.classList.toggle('hidden', !isLogin);
+        elements.registerForm.classList.toggle('hidden', isLogin);
+        setAuthError('');
+      }
+
+      /* ==================== 认证 ==================== */
+      async function handleLogin(event) {
+        event.preventDefault();
+        const username = $('#loginUsername').value.trim();
+        const password = $('#loginPassword').value;
+        if (!username || !password) {
+          setAuthError('请输入用户名和密码');
+          return;
+        }
+        try {
+          const data = await apiFetch('/permissions/login', {
+            method: 'POST',
+            body: { username, password }
+          });
+          state.token = data.access_token;
+          localStorage.setItem(TOKEN_KEY, data.access_token);
+          const me = await apiFetch('/users/me');
+          setUser(me);
+          $('#loginPassword').value = '';
+          showApp();
+          await loadAll();
+          toast('登录成功');
+        } catch (error) {
+          setAuthError(error.message || '登录失败');
+        }
+      }
+
+      async function handleRegister(event) {
+        event.preventDefault();
+        const username = $('#regUsername').value.trim();
+        const email = $('#regEmail').value.trim();
+        const password = $('#regPassword').value;
+        const confirm = $('#regConfirm').value;
+        if (!username || !email || !password) {
+          setAuthError('请完整填写注册信息');
+          return;
+        }
+        if (password !== confirm) {
+          setAuthError('两次输入的密码不一致');
+          return;
+        }
+        try {
+          await apiFetch('/permissions/register', {
+            method: 'POST',
+            body: { username, email, password }
+          });
+          setAuthTab('login');
+          $('#loginUsername').value = username;
+          setAuthError('');
+          toast('注册成功，请登录');
+        } catch (error) {
+          setAuthError(error.message || '注册失败');
+        }
+      }
+
+      /* ==================== 数据加载 ==================== */
+      async function loadTasks() {
+        const data = await apiFetch('/tasks?limit=100');
+        state.tasks = data.tasks || [];
+        renderTasks();
+        renderDashboard();
+        fillCategoryOptions();
+      }
+
+      async function loadCategories() {
+        const data = await apiFetch('/categories?limit=100');
+        state.categories = data.categories || [];
+        renderCategories();
+        renderDashboard();
+        fillCategoryOptions();
+      }
+
+      async function loadUsers() {
+        const data = await apiFetch('/users?limit=100');
+        state.users = data.users || [];
+        renderUsers();
+      }
+
+      async function loadRoles() {
+        const data = await apiFetch('/roles?limit=100');
+        state.roles = data.roles || [];
+        renderRoles();
+      }
+
+      async function loadAll() {
+        try {
+          await Promise.all([loadTasks(), loadCategories()]);
+          if (hasPermission('user:read')) {
+            await loadUsers();
+          }
+          if (hasPermission('role:read')) {
+            await loadRoles();
+          }
+        } catch (error) {
+          toast(error.message || '数据加载失败', 'error');
+        }
+      }
+
+      /* ==================== 渲染 ==================== */
+      function priorityLabel(priority) {
+        if (priority === 'high') return '高';
+        if (priority === 'low') return '低';
+        return '中';
+      }
+
+      function renderDashboard() {
+        const tasks = state.tasks || [];
+        const completed = tasks.filter((task) => task.is_completed).length;
+        $('#statTotal').textContent = tasks.length;
+        $('#statCompleted').textContent = completed;
+        $('#statPending').textContent = tasks.length - completed;
+        $('#statCategories').textContent = (state.categories || []).length;
+
+        const taskList = $('#dashboardTasks');
+        if (!tasks.length) {
+          taskList.innerHTML = '<div class="empty">暂无任务</div>';
+        } else {
+          taskList.innerHTML = tasks.slice(0, 8).map((task) => {
+            const priority = task.priority || 'medium';
+            return '<div class="task-row ' + (task.is_completed ? 'completed' : '') + '">' +
+              '<span class="title">' + escapeHtml(task.title) + '</span>' +
+              '<span class="tag ' + escapeHtml(priority) + '">' + priorityLabel(priority) + '</span>' +
+              '<span class="muted" style="font-size: 12px">' + escapeHtml(formatDate(task.created_at)) + '</span>' +
+              '</div>';
+          }).join('');
         }
 
-        showMessage("分类创建成功 🎉", "success");
-        categoryNameInput.value = "";
-        await fetchCategories();
-      } catch (err) {
-        showMessage(err.message, "error");
-      }
-    }
-
-    // 删除分类
-    async function deleteCategory(id) {
-      if (!confirm("确定删除该分类吗？关联此分类的任务将变为未分类状态。")) return;
-      try {
-        const response = await fetch(`${API_CATEGORIES}/${id}`, { method: "DELETE" });
-        if (!response.ok) throw new Error("删除分类失败");
-        showMessage("分类已删除", "success");
-        if (selectedCategoryId === id) selectedCategoryId = null;
-        await fetchCategories();
-        await fetchTasks();
-      } catch (err) {
-        showMessage(err.message, "error");
-      }
-    }
-
-    // ====================================================================
-    // 2. 任务模块交互 (Tasks CRUD)
-    // ====================================================================
-
-    // 获取任务列表（支持分类过滤）
-    async function fetchTasks() {
-      try {
-        let url = `${API_TASKS}?limit=100`;
-        if (selectedCategoryId !== null) {
-          url += `&category_id=${selectedCategoryId}`;
+        const categoryList = $('#dashboardCategories');
+        if (!state.categories.length) {
+          categoryList.innerHTML = '<div class="empty">暂无分类</div>';
+        } else {
+          categoryList.innerHTML = state.categories.slice(0, 8).map((cat) => {
+            const count = tasks.filter((task) => task.category_id === cat.id).length;
+            return '<div class="task-row">' +
+              '<span class="title" style="color:' + escapeHtml(cat.color) + '">' + escapeHtml(cat.name) + '</span>' +
+              '<span class="muted" style="font-size: 12px">' + count + ' 个任务</span>' +
+              '</div>';
+          }).join('');
         }
+      }
 
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`加载任务失败 HTTP ${response.status}`);
+      function renderTasks() {
+        const container = $('#taskList');
+        if (!state.tasks.length) {
+          container.innerHTML = '<div class="empty">暂无任务，请使用上方表单创建</div>';
+          return;
         }
-
-        const data = await response.json();
-        renderTasks(data.tasks || []);
-        updateStats(data.tasks || [], data.total || 0);
-      } catch (error) {
-        showMessage(error.message, "error");
-        emptyState.textContent = "加载失败，请确认后端服务已启动（docker compose up）";
-      }
-    }
-
-    // 统计更新
-    function updateStats(tasks, total) {
-      const completed = tasks.filter((t) => t.is_completed).length;
-      let filterText = selectedCategoryId ? ` · 已筛选分类` : "";
-      statsSpan.textContent = `共 ${total} 条 · 已完成 ${completed} 条${filterText}`;
-    }
-
-    // 新增任务
-    async function addTask(event) {
-      event.preventDefault();
-
-      const title = taskTitleInput.value.trim();
-      const description = taskDescInput.value.trim();
-      const priority = taskPrioritySelect.value;
-      const categoryIdVal = taskCategorySelect.value;
-      const category_id = categoryIdVal ? parseInt(categoryIdVal) : null;
-
-      if (!title) {
-        showMessage("任务标题不能为空", "error");
-        taskTitleInput.focus();
-        return;
+        container.innerHTML = state.tasks.map((task) => {
+          const priority = task.priority || 'medium';
+          const categoryName = task.category ? task.category.name : '未分类';
+          return '<div class="task-row ' + (task.is_completed ? 'completed' : '') + '">' +
+            '<input type="checkbox" ' + (task.is_completed ? 'checked' : '') + ' data-toggle-task="' + task.id + '">' +
+            '<div style="flex: 1; min-width: 0">' +
+            '<div class="title">' + escapeHtml(task.title) + '</div>' +
+            '<div class="muted" style="font-size: 12px">' + escapeHtml(task.description || '暂无描述') + '</div>' +
+            '</div>' +
+            '<span class="tag ' + escapeHtml(priority) + '">' + priorityLabel(priority) + '</span>' +
+            '<span class="tag gray">' + escapeHtml(categoryName) + '</span>' +
+            '<span class="muted" style="font-size: 12px">' + escapeHtml(formatDate(task.created_at)) + '</span>' +
+            '<div class="row-actions">' +
+            '<button class="btn ghost small" data-edit-task="' + task.id + '" type="button">编辑</button>' +
+            '<button class="btn danger small" data-delete-task="' + task.id + '" type="button">删除</button>' +
+            '</div>' +
+            '</div>';
+        }).join('');
       }
 
-      try {
+      function renderCategories() {
+        const container = $('#categoryList');
+        if (!state.categories.length) {
+          container.innerHTML = '<div class="empty" style="grid-column: 1/-1">暂无分类，请使用上方表单创建</div>';
+          return;
+        }
+        container.innerHTML = state.categories.map((cat) => {
+          return '<div class="category-card" style="--cat-color:' + escapeHtml(cat.color) + '">' +
+            '<div class="category-title"><span>' + escapeHtml(cat.name) + '</span>' +
+            '<span class="muted" style="font-size: 12px">' + countTasksInCategory(cat.id) + ' 个任务</span></div>' +
+            '<div class="category-desc">' + escapeHtml(cat.description || '暂无描述') + '</div>' +
+            '<div class="category-actions">' +
+            '<button class="btn ghost small" data-edit-category="' + cat.id + '" type="button">编辑</button>' +
+            '<button class="btn danger small" data-delete-category="' + cat.id + '" type="button">删除</button>' +
+            '</div>' +
+            '</div>';
+        }).join('');
+      }
+
+      function renderUsers() {
+        const tbody = $('#userTableBody');
+        if (!state.users.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无用户数据</td></tr>';
+          return;
+        }
+        tbody.innerHTML = state.users.map((user) => {
+          const roles = (user.roles || []).map((role) => role.name).join('、') || '无角色';
+          return '<tr>' +
+            '<td>' + user.id + '</td>' +
+            '<td><div style="font-weight: 650">' + escapeHtml(user.username) + '</div><div class="muted" style="font-size: 12px">' + escapeHtml(user.email) + '</div></td>' +
+            '<td>' + escapeHtml(roles) + '</td>' +
+            '<td>' + (user.is_active ? '<span class="success">启用</span>' : '<span class="danger">禁用</span>') + '</td>' +
+            '<td>' + (user.is_superuser ? '是' : '否') + '</td>' +
+            '<td><div class="row-actions">' +
+            '<button class="btn ghost small" data-edit-user="' + user.id + '" type="button">编辑</button>' +
+            '<button class="btn danger small" data-delete-user="' + user.id + '" type="button">删除</button>' +
+            '</div></td>' +
+            '</tr>';
+        }).join('');
+      }
+
+      function renderRoles() {
+        const container = $('#roleList');
+        if (!state.roles.length) {
+          container.innerHTML = '<div class="empty">暂无角色数据</div>';
+          return;
+        }
+        container.innerHTML = state.roles.map((role) => {
+          const permissions = (role.permissions || []).map((perm) => '<span class="tag gray">' + escapeHtml(perm.code) + '</span>').join(' ') || '无权限';
+          return '<div class="task-row">' +
+            '<div style="flex: 1; min-width: 0">' +
+            '<div style="font-weight: 700">' + escapeHtml(role.name) + ' <span class="muted" style="font-weight: 400">(' + escapeHtml(role.code) + ')</span></div>' +
+            '<div class="muted" style="font-size: 12px">' + escapeHtml(role.description || '暂无说明') + '</div>' +
+            '<div style="margin-top: 6px">' + permissions + '</div>' +
+            '</div>' +
+            '<div class="row-actions">' +
+            '<button class="btn ghost small" data-edit-role="' + role.id + '" type="button">编辑</button>' +
+            '<button class="btn danger small" data-delete-role="' + role.id + '" type="button">删除</button>' +
+            '</div>' +
+            '</div>';
+        }).join('');
+      }
+
+      function fillCategoryOptions() {
+        const select = $('#taskCategory');
+        select.innerHTML = '<option value="">未分类</option>' + state.categories.map((cat) => {
+          return '<option value="' + cat.id + '">' + escapeHtml(cat.name) + '</option>';
+        }).join('');
+      }
+
+      function countTasksInCategory(categoryId) {
+        return state.tasks.filter((task) => task.category_id === categoryId).length;
+      }
+
+      function findTask(id) {
+        return state.tasks.find((task) => String(task.id) === String(id));
+      }
+
+      function findCategory(id) {
+        return state.categories.find((cat) => String(cat.id) === String(id));
+      }
+
+      function findUser(id) {
+        return state.users.find((user) => String(user.id) === String(id));
+      }
+
+      function findRole(id) {
+        return state.roles.find((role) => String(role.id) === String(id));
+      }
+
+      /* ==================== 任务操作 ==================== */
+      function resetTaskForm() {
+        $('#taskForm').reset();
+        $('#taskId').value = '';
+        $('#taskFormTitle').textContent = '新建任务';
+        $('#taskSubmitBtn').textContent = '创建任务';
+        $('#taskPriority').value = 'medium';
+        $('#taskCategory').value = '';
+      }
+
+      function editTask(id) {
+        const task = findTask(id);
+        if (!task) return;
+        $('#taskId').value = task.id;
+        $('#taskTitle').value = task.title;
+        $('#taskDescription').value = task.description || '';
+        $('#taskPriority').value = task.priority || 'medium';
+        $('#taskCategory').value = task.category_id || '';
+        $('#taskFormTitle').textContent = '编辑任务 #' + task.id;
+        $('#taskSubmitBtn').textContent = '保存修改';
+      }
+
+      async function submitTask(event) {
+        event.preventDefault();
+        const id = $('#taskId').value;
+        const title = $('#taskTitle').value.trim();
+        const categoryValue = $('#taskCategory').value;
+        if (!title) {
+          toast('请输入任务标题', 'error');
+          return;
+        }
         const payload = {
           title,
-          description: description || null,
-          priority,
-          category_id,
+          description: $('#taskDescription').value.trim(),
+          priority: $('#taskPriority').value,
+          category_id: categoryValue ? Number(categoryValue) : null
         };
+        try {
+          if (id) {
+            await apiFetch('/tasks/' + id, { method: 'PUT', body: payload });
+            toast('任务更新成功');
+          } else {
+            await apiFetch('/tasks', { method: 'POST', body: payload });
+            toast('任务创建成功');
+          }
+          resetTaskForm();
+          await loadTasks();
+        } catch (error) {
+          toast(error.message || '任务保存失败', 'error');
+        }
+      }
 
-        const response = await fetch(API_TASKS, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+      async function toggleTask(id, completed) {
+        try {
+          await apiFetch('/tasks/' + id, {
+            method: 'PUT',
+            body: { is_completed: !completed }
+          });
+          await loadTasks();
+        } catch (error) {
+          toast(error.message || '状态切换失败', 'error');
+        }
+      }
+
+      async function deleteTask(id) {
+        if (!confirm('确认删除任务 #' + id + ' 吗？')) return;
+        try {
+          await apiFetch('/tasks/' + id, { method: 'DELETE' });
+          toast('任务已删除');
+          await loadTasks();
+        } catch (error) {
+          toast(error.message || '任务删除失败', 'error');
+        }
+      }
+
+      /* ==================== 分类操作 ==================== */
+      function resetCategoryForm() {
+        $('#categoryForm').reset();
+        $('#categoryId').value = '';
+        $('#categoryColor').value = '#3f6df4';
+        $('#categoryFormTitle').textContent = '新建分类';
+        $('#categorySubmitBtn').textContent = '创建分类';
+      }
+
+      function editCategory(id) {
+        const cat = findCategory(id);
+        if (!cat) return;
+        $('#categoryId').value = cat.id;
+        $('#categoryName').value = cat.name;
+        $('#categoryColor').value = cat.color || '#3f6df4';
+        $('#categoryDescription').value = cat.description || '';
+        $('#categoryFormTitle').textContent = '编辑分类 #' + cat.id;
+        $('#categorySubmitBtn').textContent = '保存修改';
+      }
+
+      async function submitCategory(event) {
+        event.preventDefault();
+        const id = $('#categoryId').value;
+        const name = $('#categoryName').value.trim();
+        if (!name) {
+          toast('请输入分类名称', 'error');
+          return;
+        }
+        const payload = {
+          name,
+          color: $('#categoryColor').value,
+          description: $('#categoryDescription').value.trim()
+        };
+        try {
+          if (id) {
+            await apiFetch('/categories/' + id, { method: 'PUT', body: payload });
+            toast('分类更新成功');
+          } else {
+            await apiFetch('/categories', { method: 'POST', body: payload });
+            toast('分类创建成功');
+          }
+          resetCategoryForm();
+          await loadCategories();
+        } catch (error) {
+          toast(error.message || '分类保存失败', 'error');
+        }
+      }
+
+      async function deleteCategory(id) {
+        if (!confirm('确认删除分类 #' + id + ' 吗？任务不会被删除，但会变为未分类。')) return;
+        try {
+          // 后端当前删除分类路由为 /categories{category_id}，保持与 OpenAPI 一致。
+          await apiFetch('/categories' + id, { method: 'DELETE' });
+          toast('分类已删除');
+          await loadCategories();
+        } catch (error) {
+          toast(error.message || '分类删除失败', 'error');
+        }
+      }
+
+      /* ==================== 用户操作 ==================== */
+      function resetUserForm() {
+        $('#userForm').reset();
+        $('#userId').value = '';
+        $('#userRoles').value = 'user';
+        $('#userActive').checked = true;
+        $('#userSuperuser').checked = false;
+        $('#userFormTitle').textContent = '新建用户';
+        $('#userPasswordLabel').textContent = '初始密码';
+        $('#userSubmitBtn').textContent = '创建用户';
+      }
+
+      function editUser(id) {
+        const user = findUser(id);
+        if (!user) return;
+        $('#userId').value = user.id;
+        $('#userUsername').value = user.username;
+        $('#userEmail').value = user.email;
+        $('#userPassword').value = '';
+        $('#userRoles').value = (user.roles || []).map((role) => role.code).join(',');
+        $('#userActive').checked = Boolean(user.is_active);
+        $('#userSuperuser').checked = Boolean(user.is_superuser);
+        $('#userFormTitle').textContent = '编辑用户 #' + user.id;
+        $('#userPasswordLabel').textContent = '新密码（留空表示不修改）';
+        $('#userSubmitBtn').textContent = '保存修改';
+      }
+
+      async function submitUser(event) {
+        event.preventDefault();
+        const id = $('#userId').value;
+        const username = $('#userUsername').value.trim();
+        const email = $('#userEmail').value.trim();
+        const password = $('#userPassword').value;
+        if (!username || !email) {
+          toast('请输入用户名和邮箱', 'error');
+          return;
+        }
+        if (!id && !password) {
+          toast('创建用户时需要设置密码', 'error');
+          return;
+        }
+        const roleCodes = $('#userRoles').value.split(',').map((code) => code.trim()).filter(Boolean);
+        const payload = {
+          username,
+          email,
+          is_active: $('#userActive').checked,
+          is_superuser: $('#userSuperuser').checked,
+          role_codes: roleCodes
+        };
+        if (password) {
+          payload.password = password;
+        }
+        try {
+          if (id) {
+            await apiFetch('/users/' + id, { method: 'PUT', body: payload });
+            toast('用户更新成功');
+          } else {
+            await apiFetch('/users', { method: 'POST', body: payload });
+            toast('用户创建成功');
+          }
+          resetUserForm();
+          await loadUsers();
+        } catch (error) {
+          toast(error.message || '用户保存失败', 'error');
+        }
+      }
+
+      async function deleteUser(id) {
+        if (!confirm('确认删除用户 #' + id + ' 吗？')) return;
+        try {
+          await apiFetch('/users/' + id, { method: 'DELETE' });
+          toast('用户已删除');
+          await loadUsers();
+        } catch (error) {
+          toast(error.message || '用户删除失败', 'error');
+        }
+      }
+
+      /* ==================== 角色操作 ==================== */
+      function resetRoleForm() {
+        $('#roleForm').reset();
+        $('#roleId').value = '';
+        $('#roleFormTitle').textContent = '新建角色';
+        $('#roleSubmitBtn').textContent = '创建角色';
+      }
+
+      function editRole(id) {
+        const role = findRole(id);
+        if (!role) return;
+        $('#roleId').value = role.id;
+        $('#roleCode').value = role.code;
+        $('#roleName').value = role.name;
+        $('#roleDescription').value = role.description || '';
+        $('#rolePermissions').value = (role.permissions || []).map((perm) => perm.code).join(',');
+        $('#roleFormTitle').textContent = '编辑角色 #' + role.id;
+        $('#roleSubmitBtn').textContent = '保存修改';
+      }
+
+      async function submitRole(event) {
+        event.preventDefault();
+        const id = $('#roleId').value;
+        const code = $('#roleCode').value.trim();
+        const name = $('#roleName').value.trim();
+        if (!code || !name) {
+          toast('请输入角色编码和名称', 'error');
+          return;
+        }
+        const permissionCodes = $('#rolePermissions').value.split(',').map((item) => item.trim()).filter(Boolean);
+        const payload = {
+          name,
+          description: $('#roleDescription').value.trim(),
+          permission_codes: permissionCodes
+        };
+        if (!id) {
+          payload.code = code;
+        }
+        try {
+          if (id) {
+            await apiFetch('/roles/' + id, { method: 'PUT', body: payload });
+            toast('角色更新成功');
+          } else {
+            await apiFetch('/roles', { method: 'POST', body: payload });
+            toast('角色创建成功');
+          }
+          resetRoleForm();
+          await loadRoles();
+        } catch (error) {
+          toast(error.message || '角色保存失败', 'error');
+        }
+      }
+
+      async function deleteRole(id) {
+        if (!confirm('确认删除角色 #' + id + ' 吗？')) return;
+        try {
+          await apiFetch('/roles/' + id, { method: 'DELETE' });
+          toast('角色已删除');
+          await loadRoles();
+        } catch (error) {
+          toast(error.message || '角色删除失败', 'error');
+        }
+      }
+
+      /* ==================== 个人中心 ==================== */
+      function fillProfileForm() {
+        if (!state.user) return;
+        $('#profileUsername').value = state.user.username || '';
+        $('#profileEmail').value = state.user.email || '';
+        $('#profilePassword').value = '';
+      }
+
+      async function submitProfile(event) {
+        event.preventDefault();
+        const username = $('#profileUsername').value.trim();
+        const email = $('#profileEmail').value.trim();
+        const password = $('#profilePassword').value;
+        if (!username || !email) {
+          toast('请输入用户名和邮箱', 'error');
+          return;
+        }
+        const payload = { username, email };
+        if (password) {
+          payload.password = password;
+        }
+        try {
+          const updated = await apiFetch('/users/me', { method: 'PUT', body: payload });
+          setUser(updated);
+          showApp();
+          fillProfileForm();
+          toast('个人资料已更新');
+        } catch (error) {
+          toast(error.message || '个人资料更新失败', 'error');
+        }
+      }
+
+      /* ==================== 事件绑定 ==================== */
+      function bindEvents() {
+        elements.tabLogin.addEventListener('click', () => setAuthTab('login'));
+        elements.tabRegister.addEventListener('click', () => setAuthTab('register'));
+        elements.loginForm.addEventListener('submit', handleLogin);
+        elements.registerForm.addEventListener('submit', handleRegister);
+        elements.logoutBtn.addEventListener('click', logout);
+        elements.menuToggle.addEventListener('click', openSidebar);
+        elements.sidebarOverlay.addEventListener('click', closeSidebar);
+
+        $$('.nav-btn').forEach((btn) => {
+          btn.addEventListener('click', () => switchPage(btn.getAttribute('data-page')));
         });
 
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(err.detail || "添加任务失败");
-        }
-
-        taskTitleInput.value = "";
-        taskDescInput.value = "";
-        taskPrioritySelect.value = "medium";
-        showMessage("任务添加成功 ✅", "success");
-        await fetchTasks();
-      } catch (error) {
-        showMessage(error.message, "error");
-      }
-    }
-
-    // 切换任务完成状态
-    async function toggleTask(task, checkbox) {
-      try {
-        const response = await fetch(`${API_TASKS}/${task.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ is_completed: checkbox.checked }),
+        $('#taskForm').addEventListener('submit', submitTask);
+        $('#taskCancelBtn').addEventListener('click', resetTaskForm);
+        $('#categoryForm').addEventListener('submit', submitCategory);
+        $('#categoryCancelBtn').addEventListener('click', resetCategoryForm);
+        $('#userForm').addEventListener('submit', submitUser);
+        $('#userCancelBtn').addEventListener('click', resetUserForm);
+        $('#roleForm').addEventListener('submit', submitRole);
+        $('#roleCancelBtn').addEventListener('click', resetRoleForm);
+        $('#profileForm').addEventListener('submit', submitProfile);
+        $('#refreshDashboard').addEventListener('click', loadAll);
+        $('#clearResponseBtn').addEventListener('click', () => {
+          state.lastResponse = null;
+          renderLastResponse();
         });
 
-        if (!response.ok) throw new Error("更新状态失败");
-        showMessage(checkbox.checked ? "任务已完成 👏" : "任务已恢复为待办", "success");
-        await fetchTasks();
-      } catch (error) {
-        checkbox.checked = !checkbox.checked;
-        showMessage(error.message, "error");
+        document.addEventListener('click', (event) => {
+          const target = event.target.closest('[data-edit-task], [data-delete-task], [data-toggle-task], [data-edit-category], [data-delete-category], [data-edit-user], [data-delete-user], [data-edit-role], [data-delete-role]');
+          if (!target) return;
+
+          const editTaskId = target.getAttribute('data-edit-task');
+          if (editTaskId) {
+            editTask(editTaskId);
+            return;
+          }
+          const deleteTaskId = target.getAttribute('data-delete-task');
+          if (deleteTaskId) {
+            deleteTask(deleteTaskId);
+            return;
+          }
+          const toggleTaskId = target.getAttribute('data-toggle-task');
+          if (toggleTaskId) {
+            toggleTask(toggleTaskId, target.checked);
+            return;
+          }
+          const editCategoryId = target.getAttribute('data-edit-category');
+          if (editCategoryId) {
+            editCategory(editCategoryId);
+            return;
+          }
+          const deleteCategoryId = target.getAttribute('data-delete-category');
+          if (deleteCategoryId) {
+            deleteCategory(deleteCategoryId);
+            return;
+          }
+          const editUserId = target.getAttribute('data-edit-user');
+          if (editUserId) {
+            editUser(editUserId);
+            return;
+          }
+          const deleteUserId = target.getAttribute('data-delete-user');
+          if (deleteUserId) {
+            deleteUser(deleteUserId);
+            return;
+          }
+          const editRoleId = target.getAttribute('data-edit-role');
+          if (editRoleId) {
+            editRole(editRoleId);
+            return;
+          }
+          const deleteRoleId = target.getAttribute('data-delete-role');
+          if (deleteRoleId) {
+            deleteRole(deleteRoleId);
+          }
+        });
       }
-    }
 
-    // 删除任务
-    async function deleteTask(id) {
-      if (!confirm("确定删除这条任务吗？")) return;
-      try {
-        const response = await fetch(`${API_TASKS}/${id}`, { method: "DELETE" });
-        if (!response.ok) throw new Error("删除任务失败");
-        showMessage("任务已删除", "success");
-        await fetchTasks();
-      } catch (error) {
-        showMessage(error.message, "error");
-      }
-    }
+      /* ==================== 启动 ==================== */
+      async function bootstrap() {
+        bindEvents();
+        renderLastResponse();
+        setAuthTab('login');
 
-    // 渲染任务列表
-    function renderTasks(tasks) {
-      taskList.innerHTML = "";
-
-      if (!tasks || tasks.length === 0) {
-        emptyState.hidden = false;
-        emptyState.textContent = selectedCategoryId 
-          ? "该分类下暂无任务，快去添加一条吧 💡" 
-          : "暂无任务，在上方新建一条吧 🎉";
-        return;
-      }
-
-      emptyState.hidden = true;
-
-      for (const task of tasks) {
-        const item = document.createElement("div");
-        item.className = "task-item" + (task.is_completed ? " completed" : "");
-
-        // 完成复选框
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = Boolean(task.is_completed);
-        checkbox.addEventListener("change", () => toggleTask(task, checkbox));
-
-        // 任务主体
-        const body = document.createElement("div");
-        body.className = "task-body";
-
-        const title = document.createElement("div");
-        title.className = "task-title";
-        title.textContent = task.title;
-
-        const description = document.createElement("div");
-        description.className = "task-description";
-        description.textContent = task.description || "";
-
-        // 元数据：分类标签 + 优先级徽章 + 时间
-        const meta = document.createElement("div");
-        meta.className = "task-meta";
-
-        // 分类标签（如果有关联分类）
-        if (task.category) {
-          const catBadge = document.createElement("span");
-          catBadge.className = "cat-badge";
-          catBadge.style.backgroundColor = task.category.color || "#1890ff";
-          catBadge.style.cursor = "pointer";
-          catBadge.title = "点击筛选此分类";
-          catBadge.textContent = `🏷️ ${task.category.name}`;
-          catBadge.onclick = (e) => {
-            e.stopPropagation();
-            selectCategoryFilter(task.category.id);
-          };
-          meta.appendChild(catBadge);
+        if (!state.token) {
+          showAuth();
+          return;
         }
 
-        // 优先级徽章
-        const pBadge = document.createElement("span");
-        const p = priorityInfo(task.priority);
-        pBadge.className = "badge " + p.className;
-        pBadge.textContent = "优先级: " + p.label;
-        meta.appendChild(pBadge);
-
-        // 创建时间
-        const time = document.createElement("span");
-        time.textContent = "创建于 " + formatTime(task.created_at);
-        meta.appendChild(time);
-
-        body.appendChild(title);
-        if (task.description) body.appendChild(description);
-        body.appendChild(meta);
-
-        // 删除按钮
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-delete";
-        delBtn.textContent = "删除";
-        delBtn.addEventListener("click", () => deleteTask(task.id));
-
-        item.appendChild(checkbox);
-        item.appendChild(body);
-        item.appendChild(delBtn);
-        taskList.appendChild(item);
+        try {
+          const me = await apiFetch('/users/me');
+          setUser(me);
+          showApp();
+          await loadAll();
+        } catch (error) {
+          state.token = '';
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          showAuth();
+          if (error.status === 401) {
+            toast('登录状态已过期，请重新登录', 'error');
+          }
+        }
       }
-    }
 
-    // ====================================================================
-    // 初始化与事件绑定
-    // ====================================================================
-    taskForm.addEventListener("submit", addTask);
-    categoryForm.addEventListener("submit", addCategory);
-    refreshBtn.addEventListener("click", () => {
-      fetchCategories();
-      fetchTasks();
-    });
-
-    document.addEventListener("DOMContentLoaded", () => {
-      fetchCategories();
-      fetchTasks();
-    });
+      bootstrap();
+    })();
   </script>
 </body>
+
 </html>

@@ -52,23 +52,24 @@ class Task(Base):
         index=True,
         comment="所属分类ID",
     )
-
     # ORM 关系映射：允许通过 task.category 直接获取 Category 对象
-    category = relationship("Category", backref="tasks", lazy="joined")
+    category = relationship("Category", back_populates="tasks", lazy="joined")
+
+    owner_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+        comment="所属用户ID",
+    )
+
+    owner = relationship("User", back_populates="tasks", lazy="selectin")
 
     # 记录创建时间：由数据库端自动填入当前时间戳
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         comment="创建时间",
-    )
-
-    # 记录更新时间：每次对本行执行更新时，数据库自动刷新为最新时间
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        comment="更新时间",
     )
 
     def __repr__(self) -> str:

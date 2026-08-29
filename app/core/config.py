@@ -45,11 +45,17 @@ class Settings(BaseSettings):
     # 前端 HTML/CSS/JS 静态文件存放路径
     STATIC_DIR: str = "static"
 
+    # 　=================== 初始超级管理员配置（种子数据） ====================
+    FIRST_SUPERUSER: str = os.environ.get("FIRST_SUPERUSER", "admin")
+    FIRST_SUPERUSER_PASSWORD: str = os.environ.get(
+        "FIRST_SUPERUSER_PASSWORD", "admin123456"
+    )
+
     # Pydantic Settings 配置项
     model_config = SettingsConfigDict(
-        env_file=".env",            # 支持从本地 .env 文件读取
-        case_sensitive=True,        # 区分环境变量大小写
-        extra="ignore",             # 忽略多余的未知环境变量
+        env_file=".env",  # 支持从本地 .env 文件读取
+        case_sensitive=True,  # 区分环境变量大小写
+        extra="ignore",  # 忽略多余的未知环境变量
     )
 
 

@@ -44,7 +44,11 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: Optional[timedelta] = None
+    # Union[str, Any]：参数优先推荐传字符串（str），传其他任意类型Python 也不会报类型检查错误。
+    subject: Union[str, Any],
+    expires_delta: Optional[
+        timedelta
+    ] = None,  # Optional[timedelta]：参数可选，默认为 None
 ) -> str:
     """
     生成 JWT 访问令牌（Access Token）
@@ -61,7 +65,7 @@ def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-    # 组装载荷（Payload）
+    # 组装载荷（Payload） exp：过期时间   sub：识别身份主体
     to_encode = {"exp": expire, "sub": str(subject)}
     # 使用密钥与算法进行签名生成 Token
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)

@@ -9,7 +9,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import health, tasks, categories
+from app.api.v1.endpoints import auth, health, roles, tasks, categories, users
 
 # 实例化 v1 统一路由器
 api_router = APIRouter()
@@ -22,3 +22,7 @@ api_router.include_router(tasks.router, prefix="/tasks", tags=["任务"])
 
 # 2. 挂载分类模块（统一加前缀 /categories，打上标签）
 api_router.include_router(categories.router, prefix="/categories", tags=["分类"])
+
+api_router.include_router(users.router, prefix="/users", tags=["用户"])
+api_router.include_router(roles.router, prefix="/roles", tags=["角色"])
+api_router.include_router(auth.router, prefix="/permissions", tags=["权限"])

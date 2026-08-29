@@ -13,14 +13,17 @@ FastAPI 应用全局入口 (main.py)
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.api import api_router
 from app.core.config import settings
+from app.core.seed import init_seed_data
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import SessionLocal, engine
 
 
 # ==================== 应用生命周期管理 (Lifespan) ====================
@@ -31,8 +34,13 @@ async def lifespan(app: FastAPI):
     - yield 之前：在应用启动 (Startup) 时执行；
     - yield 之后：在应用关闭 (Shutdown) 时执行。
     """
-    # 启动时：根据 Base.metadata 自动创建所有尚未在 MySQL 中存在的数据表
+    # 1. 启动时：根据 Base.metadata 自动创建所有尚未在 MySQL 中存在的数据表
     Base.metadata.create_all(bind=engine)
+
+    # 2. 初始化 RBAC 种子数据（角色、权限、超级管理员）
+    with SessionLocal() as db:
+        init_seed_data(db)
+
     print("✅ [Lifespan] 数据库表已验证/创建完成")
     yield
     # 关闭时：释放连接池或清理资源
@@ -45,8 +53,8 @@ app = FastAPI(
     description=settings.DESCRIPTION,
     version=settings.VERSION,
     lifespan=lifespan,
-    docs_url="/docs",      # Swagger UI 交互式文档路径
-    redoc_url="/redoc",    # ReDoc 文档路径
+    docs_url="/docs",  # Swagger UI 交互式文档路径
+    redoc_url="/redoc",  # ReDoc 文档路径
 )
 
 
@@ -54,11 +62,21 @@ app = FastAPI(
 # 配置 CORS (跨源资源共享)，允许前端应用跨域发送请求
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # 允许所有来源（生产环境可限定特定域名）
+    allow_origins=["*"],  # 允许所有来源（生产环境可限定特定域名）
     allow_credentials=True,
-    allow_methods=["*"],       # 允许所有 HTTP 方法 (GET, POST, PUT, DELETE 等)
-    allow_headers=["*"],       # 允许所有请求头
+    allow_methods=["*"],  # 允许所有 HTTP 方法 (GET, POST, PUT, DELETE 等)
+    allow_headers=["*"],  # 允许所有请求头
 )
+
+
+# ==================== 全局异常统管 ====================
+# 数据库唯一键冲突（如用户名/邮箱重复）统一转成 409，避免把堆栈抛给前端
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    return JSONResponse(
+        status_code=409,
+        content={"detail": "数据冲突：用户名、邮箱或编码可能已存在"},
+    )
 
 
 # ==================== 挂载静态文件目录 ====================

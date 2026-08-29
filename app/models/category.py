@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base
 
@@ -24,6 +25,8 @@ class Category(Base):
         onupdate=func.now(),
         comment="更新时间",
     )
+
+    tasks = relationship("Task", back_populates="category")
 
     def __repr__(self):
         return f"<Category(id={self.id}, name='{self.name}', color='{self.color}')>"
